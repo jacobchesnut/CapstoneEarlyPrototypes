@@ -56,6 +56,7 @@ public class TheWorld : MonoBehaviour
         //create target
         savedObjects[7] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         savedObjects[7].transform.localScale = target.transform.localScale;
+        savedObjects[7].GetComponent<Renderer>().material.color = Color.red;
 
         //throw everything up 100 units to be out of the way
         Vector3 tempPos;
@@ -152,7 +153,7 @@ public class TheWorld : MonoBehaviour
 
             //move everything away from the center a little
             Vector3 tempPos;
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 8; i++)
             {
                 tempPos = savedObjects[i].transform.position;
                 tempPos.x += 5;
