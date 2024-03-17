@@ -73,6 +73,8 @@ public class TheWorld : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
+            //print some info for debugging
+            Debug.Log("Distance between eyes is: " + (leftEye.transform.position - rightEye.transform.position).magnitude + " " + leftEye.transform.position + " " + rightEye.transform.position);
             //if hit space, save the current position of the eyes and cube
             Transform gazeReference = null;
             //left eye cube
