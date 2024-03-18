@@ -19,8 +19,16 @@ public class ScreenGenerator : MonoBehaviour
 
     public GameObject leftEye = null; //reference to the left eye for collision checks
 
+    //determines whether to use the distance algorithm, or the foveated algorithm
     public bool showDistance = true;
-    
+
+    //determines whether to calculate distances based on the angle offset from the user's gaze,
+    //or the distance offset within the screen.
+    public bool useDegreesFromEye = false;
+
+    //defines the angles to determine 
+    public float innerAngle = 15f;
+    public float outerAngle = 30f;
     
     // Start is called before the first frame update
     void Start()
@@ -88,6 +96,37 @@ public class ScreenGenerator : MonoBehaviour
                 }
             }
         }
+        else if (useDegreesFromEye)
+        {
+            //no need for a hit pixel if we're doing based on degrees
+            int pixelX = width/2;
+            int pixelY = height/2;
+            //Debug.Log("hit on: " + pixelNums[0] + " " + pixelX + " " + pixelY);
+            //screen[pixelX][pixelY].GetComponent<Renderer>().material.color = Color.red; //mark the main pixel as red
+
+            if (showDistance)
+            {
+                if (FOVEATE_NO_SPACE)
+                {
+                    showDistanceAlgorithm(pixelX, pixelY);
+                }
+                else if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    showDistanceAlgorithm(pixelX, pixelY);
+                }
+            }
+            else
+            {
+                if (FOVEATE_NO_SPACE)
+                {
+                    showFovealAlgorithm(pixelX, pixelY);
+                }
+                else if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    showFovealAlgorithm(pixelX, pixelY);
+                }
+            }
+        }
     }
 
     private void showFovealAlgorithm(int pixelX, int pixelY)
@@ -96,51 +135,127 @@ public class ScreenGenerator : MonoBehaviour
 
         //int i = pixelX;
         //int j = pixelY;
-
-        int ub1, ub2, rb1, rb2, db1, db2, lb1, lb2;
-        //bounds define one third and two thirds of the total screen space
-        ub1 = pixelY + (int)(0.16f * height);
-        ub2 = pixelY + (int)(0.33f * height);
-        rb1 = pixelX + (int)(0.16f * height);
-        rb2 = pixelX + (int)(0.33f * height);
-        db1 = pixelY - (int)(0.16f * height);
-        db2 = pixelY - (int)(0.33f * height);
-        lb1 = pixelX - (int)(0.16f * height);
-        lb2 = pixelX - (int)(0.33f * height);
-
-        //make center pixels green
-        for(int i = db1; i < ub1; i++)
+        if (!useDegreesFromEye)
         {
-            for(int j = lb1; j < rb1; j++)
+            int ub1, ub2, rb1, rb2, db1, db2, lb1, lb2;
+            //bounds define one third and two thirds of the total screen space
+            ub1 = pixelY + (int)(0.16f * height);
+            ub2 = pixelY + (int)(0.33f * height);
+            rb1 = pixelX + (int)(0.16f * height);
+            rb2 = pixelX + (int)(0.33f * height);
+            db1 = pixelY - (int)(0.16f * height);
+            db2 = pixelY - (int)(0.33f * height);
+            lb1 = pixelX - (int)(0.16f * height);
+            lb2 = pixelX - (int)(0.33f * height);
+
+            //make center pixels green
+            for (int i = db1; i < ub1; i++)
             {
-                if(!(i == pixelY && j == pixelX) && i < height && i >= 0 && j < width && j >= 0)
+                for (int j = lb1; j < rb1; j++)
                 {
-                    screen[j][i].GetComponent<Renderer>().material.color = Color.green;
+                    if (!(i == pixelY && j == pixelX) && i < height && i >= 0 && j < width && j >= 0)
+                    {
+                        screen[j][i].GetComponent<Renderer>().material.color = Color.green;
+                    }
+                }
+            }
+            //make the outer regions random colors
+            Color randColor;
+            for (int i = db2; i < ub2; i += 2)
+            {
+                for (int j = lb2; j < rb2; j += 2)
+                {
+                    randColor = new Color(Random.value, Random.value, Random.value);
+                    if (!(i >= db1 && i < ub1 && j >= lb1 && j < rb1) && i < height && i >= 0 && j < width && j >= 0)
+                    {
+                        screen[j][i].GetComponent<Renderer>().material.color = randColor;
+                    }
+                    if (!(i + 1 >= db1 && i + 1 < ub1 && j >= lb1 && j < rb1) && i + 1 < ub2 && i + 1 < height && i + 1 >= 0 && j < width && j >= 0)
+                    {
+                        screen[j][i + 1].GetComponent<Renderer>().material.color = randColor;
+                    }
+                    if (!(i >= db1 && i < ub1 && j + 1 >= lb1 && j + 1 < rb1) && j + 1 < rb2 && i < height && i >= 0 && j + 1 < width && j + 1 >= 0)
+                    {
+                        screen[j + 1][i].GetComponent<Renderer>().material.color = randColor;
+                    }
+                    if (!(i + 1 >= db1 && i + 1 < ub1 && j + 1 >= lb1 && j + 1 < rb1) && i + 1 < ub2 && j + 1 < rb2 && i + 1 < height && i + 1 >= 0 && j + 1 < width && j + 1 >= 0)
+                    {
+                        screen[j + 1][i + 1].GetComponent<Renderer>().material.color = randColor;
+                    }
                 }
             }
         }
-        //make the outer regions random colors
-        Color randColor;
-        for(int i = db2; i < ub2; i += 2)
+        else
         {
-            for(int j = lb2; j < rb2; j += 2)
+            //regions are defined based on the angle from the eye
+            //make center pixels green
+            Vector3 A, B, C;
+            float aMag, bMag, cMag, degrees;
+            for (int i = 0; i < height; i++)
             {
-                randColor = new Color(Random.value, Random.value, Random.value);
-                if(!(i >= db1 && i < ub1 && j >= lb1 && j < rb1) && i < height && i >= 0 && j < width && j >= 0)
+                for (int j = 0; j < width; j++)
                 {
-                    screen[j][i].GetComponent<Renderer>().material.color = randColor;
+                    A = leftEye.transform.forward * 5;
+                    C = screen[j][i].transform.position - leftEye.transform.position;
+                    B = C - A;
+                    aMag = A.magnitude;
+                    bMag = B.magnitude;
+                    cMag = C.magnitude;
+                    degrees = Mathf.Rad2Deg * Mathf.Acos(((aMag * aMag) + (cMag * cMag) - (bMag * bMag)) / (2 * aMag * cMag));
+                    if (degrees < innerAngle)
+                    {
+                        screen[j][i].GetComponent<Renderer>().material.color = Color.green;
+                    }
                 }
-                if (!(i+1 >= db1 && i+1 < ub1 && j >= lb1 && j < rb1) && i+1 < ub2 && i+1 < height && i+1 >= 0 && j < width && j >= 0)
+            }
+            //make the outer regions random colors
+            Color randColor;
+            for (int i = 0; i < height; i += 2)
+            {
+                for (int j = 0; j < width; j += 2)
                 {
-                    screen[j][i+1].GetComponent<Renderer>().material.color = randColor;
-                }
-                if (!(i >= db1 && i < ub1 && j + 1 >= lb1 && j + 1 < rb1) && j + 1 < rb2 && i < height && i >= 0 && j+1 < width && j+1 >= 0)
-                {
-                    screen[j + 1][i].GetComponent<Renderer>().material.color = randColor;
-                }
-                if (!(i + 1 >= db1 && i + 1 < ub1 && j + 1 >= lb1 && j + 1 < rb1) && i + 1 < ub2 && j + 1 < rb2 && i+1 < height && i+1 >= 0 && j+1 < width && j+1 >= 0)
-                {
-                    screen[j + 1][i + 1].GetComponent<Renderer>().material.color = randColor;
+                    randColor = new Color(Random.value, Random.value, Random.value);
+                    A = leftEye.transform.forward * 5;
+                    C = screen[j][i].transform.position - leftEye.transform.position;
+                    B = C - A;
+                    aMag = A.magnitude;
+                    bMag = B.magnitude;
+                    cMag = C.magnitude;
+                    degrees = Mathf.Rad2Deg * Mathf.Acos(((aMag * aMag) + (cMag * cMag) - (bMag * bMag)) / (2 * aMag * cMag));
+                    if (degrees < outerAngle && degrees > innerAngle)
+                    {
+                        screen[j][i].GetComponent<Renderer>().material.color = randColor;
+                    }
+                    C = screen[j][i + 1].transform.position - leftEye.transform.position;
+                    B = C - A;
+                    aMag = A.magnitude;
+                    bMag = B.magnitude;
+                    cMag = C.magnitude;
+                    degrees = Mathf.Rad2Deg * Mathf.Acos(((aMag * aMag) + (cMag * cMag) - (bMag * bMag)) / (2 * aMag * cMag));
+                    if (degrees < outerAngle && degrees > innerAngle)
+                    {
+                        screen[j][i + 1].GetComponent<Renderer>().material.color = randColor;
+                    }
+                    C = screen[j + 1][i].transform.position - leftEye.transform.position;
+                    B = C - A;
+                    aMag = A.magnitude;
+                    bMag = B.magnitude;
+                    cMag = C.magnitude;
+                    degrees = Mathf.Rad2Deg * Mathf.Acos(((aMag * aMag) + (cMag * cMag) - (bMag * bMag)) / (2 * aMag * cMag));
+                    if (degrees < outerAngle && degrees > innerAngle)
+                    {
+                        screen[j + 1][i].GetComponent<Renderer>().material.color = randColor;
+                    }
+                    C = screen[j + 1][i + 1].transform.position - leftEye.transform.position;
+                    B = C - A;
+                    aMag = A.magnitude;
+                    bMag = B.magnitude;
+                    cMag = C.magnitude;
+                    degrees = Mathf.Rad2Deg * Mathf.Acos(((aMag * aMag) + (cMag * cMag) - (bMag * bMag)) / (2 * aMag * cMag));
+                    if (degrees < outerAngle && degrees > innerAngle)
+                    {
+                        screen[j + 1][i + 1].GetComponent<Renderer>().material.color = randColor;
+                    }
                 }
             }
         }
@@ -200,6 +315,10 @@ public class ScreenGenerator : MonoBehaviour
             j += 1;
             dir = 0;
         }
+
+        //create vars for eye degree distance
+        Vector3 A, B, C;
+        float aMag, bMag, cMag, degrees;
 
         while (true)
         {
@@ -272,28 +391,56 @@ public class ScreenGenerator : MonoBehaviour
                 dir = 3;
                 continue;
             }
-
-            //color pixel based on distance
-            distX = Mathf.Abs(i - pixelX);
-            distY = Mathf.Abs(j - pixelY);
-            //make distance fraction of total distance
-            distX = distX / width;
-            distY = distY / height;
-            if(distX > 0.33f || distY > 0.33f)
+            if (!useDegreesFromEye)
             {
-                //third range, color black
-                Debug.Log("index pixel " + i + " " + j);
-                screen[i][j].GetComponent<Renderer>().material.color = Color.black;
-            }
-            else if(distX > 0.16f || distY > 0.16f)
-            {
-                //second range, color red
-                screen[i][j].GetComponent<Renderer>().material.color = Color.red;
+                //color pixel based on distance
+                distX = Mathf.Abs(i - pixelX);
+                distY = Mathf.Abs(j - pixelY);
+                //make distance fraction of total distance
+                distX = distX / width;
+                distY = distY / height;
+                if (distX > 0.33f || distY > 0.33f)
+                {
+                    //third range, color black
+                    Debug.Log("index pixel " + i + " " + j);
+                    screen[i][j].GetComponent<Renderer>().material.color = Color.black;
+                }
+                else if (distX > 0.16f || distY > 0.16f)
+                {
+                    //second range, color red
+                    screen[i][j].GetComponent<Renderer>().material.color = Color.red;
+                }
+                else
+                {
+                    //within inner range, color green
+                    screen[i][j].GetComponent<Renderer>().material.color = Color.green;
+                }
             }
             else
             {
-                //within inner range, color green
-                screen[i][j].GetComponent<Renderer>().material.color = Color.green;
+                A = leftEye.transform.forward * 5;
+                C = screen[i][j].transform.position - leftEye.transform.position;
+                B = C - A;
+                aMag = A.magnitude;
+                bMag = B.magnitude;
+                cMag = C.magnitude;
+                degrees = Mathf.Rad2Deg * Mathf.Acos(((aMag * aMag) + (cMag * cMag) - (bMag * bMag)) / (2 * aMag * cMag));
+                if (degrees > outerAngle)
+                {
+                    //third range, color black
+                    Debug.Log("index pixel " + i + " " + j);
+                    screen[i][j].GetComponent<Renderer>().material.color = Color.black;
+                }
+                else if (degrees < outerAngle && degrees > innerAngle)
+                {
+                    //second range, color red
+                    screen[i][j].GetComponent<Renderer>().material.color = Color.red;
+                }
+                else
+                {
+                    //within inner range, color green
+                    screen[i][j].GetComponent<Renderer>().material.color = Color.green;
+                }
             }
 
             //now move to the next pixel

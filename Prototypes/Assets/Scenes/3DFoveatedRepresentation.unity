@@ -562,7 +562,10 @@ MonoBehaviour:
   screenHeight: 10
   screenWidth: 10
   leftEye: {fileID: 2122727171}
-  showDistance: 1
+  showDistance: 0
+  useDegreesFromEye: 1
+  innerAngle: 15
+  outerAngle: 30
 --- !u!4 &1261755160
 Transform:
   m_ObjectHideFlags: 0
