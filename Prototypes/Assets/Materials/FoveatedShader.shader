@@ -120,8 +120,8 @@ Shader "Unlit/FoveatedShader"
                         //top
                         useY = _offscreenAngleDown;
                     }
-                    float xRatio = fromV.uv.x/(fromV.uv.x+fromV.uv.y);
-                    float yRatio = fromV.uv.y/(fromV.uv.y+fromV.uv.x);
+                    float xRatio = abs(fromV.uv.x - 0.5)/(abs(fromV.uv.x - 0.5)+abs(fromV.uv.y - 0.5));
+                    float yRatio = abs(fromV.uv.y - 0.5)/(abs(fromV.uv.y - 0.5)+abs(fromV.uv.x - 0.5));
                     outsideAngle = (useX * xRatio)+(useY * yRatio);
                     
                 }
