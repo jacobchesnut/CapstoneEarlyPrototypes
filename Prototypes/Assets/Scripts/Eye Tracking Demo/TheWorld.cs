@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class TheWorld : MonoBehaviour
 {
+    public bool logPrint = false;
     //gameobjects which reference the player's eyes
     public GameObject leftEye = null;
     public GameObject rightEye = null;
@@ -58,12 +59,12 @@ public class TheWorld : MonoBehaviour
         savedObjects[7].transform.localScale = target.transform.localScale;
         savedObjects[7].GetComponent<Renderer>().material.color = Color.red;
 
-        //throw everything up 100 units to be out of the way
+        //throw everything up 1000 units to be out of the way
         Vector3 tempPos;
         for(int i = 0; i < 8; i++)
         {
             tempPos = savedObjects[i].transform.position;
-            tempPos.y += 100;
+            tempPos.y += 1000;
             savedObjects[i].transform.position = tempPos;
         }
     }
@@ -74,7 +75,10 @@ public class TheWorld : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             //print some info for debugging
-            Debug.Log("Distance between eyes is: " + (leftEye.transform.position - rightEye.transform.position).magnitude + " " + leftEye.transform.position + " " + rightEye.transform.position);
+            if (logPrint)
+            {
+                Debug.Log("Distance between eyes is: " + (leftEye.transform.position - rightEye.transform.position).magnitude + " " + leftEye.transform.position + " " + rightEye.transform.position);
+            }
             //if hit space, save the current position of the eyes and cube
             Transform gazeReference = null;
             //left eye cube
@@ -97,7 +101,10 @@ public class TheWorld : MonoBehaviour
             Vector3 rayStartPos;
             //calculate left
             rayStartPos = savedObjects[0].transform.position + (savedObjects[0].transform.TransformDirection(Vector3.forward) * 0.2f); //small adjustment in the forward direction to avoid collision with the cylinder
-            Debug.Log("left eye pos and dir: " + rayStartPos + " " + savedObjects[0].transform.rotation.eulerAngles);
+            if (logPrint)
+            {
+                Debug.Log("left eye pos and dir: " + rayStartPos + " " + savedObjects[0].transform.rotation.eulerAngles);
+            }
             hit = Physics.Raycast(rayStartPos, savedObjects[0].transform.TransformDirection(Vector3.forward), out gazePoint, Mathf.Infinity);
             if (hit)
             {
@@ -110,7 +117,10 @@ public class TheWorld : MonoBehaviour
             }
             //calculate right
             rayStartPos = savedObjects[1].transform.position + (savedObjects[1].transform.TransformDirection(Vector3.forward) * 0.2f); //small adjustment in the forward direction to avoid collision with the cylinder
-            Debug.Log("right eye pos and dir: " + rayStartPos + " " + savedObjects[1].transform.rotation.eulerAngles);
+            if (logPrint)
+            {
+                Debug.Log("right eye pos and dir: " + rayStartPos + " " + savedObjects[1].transform.rotation.eulerAngles);
+            }
             hit = Physics.Raycast(rayStartPos, savedObjects[1].transform.TransformDirection(Vector3.forward), out gazePoint, Mathf.Infinity, ~128);
             if (hit)
             {
@@ -123,7 +133,10 @@ public class TheWorld : MonoBehaviour
             }
             //calculate distance
             Vector3 distanceVector = savedObjects[4].transform.position - savedObjects[5].transform.position;
-            Debug.Log("distance between eye points = " + distanceVector.magnitude);
+            if (logPrint)
+            {
+                Debug.Log("distance between eye points = " + distanceVector.magnitude);
+            }
 
             //calculate degree offset
             //left eye
@@ -136,9 +149,12 @@ public class TheWorld : MonoBehaviour
             float offset = Mathf.Acos(
                 ((B.magnitude * B.magnitude) + (C.magnitude * C.magnitude) - (A.magnitude * A.magnitude))
                 / (2 * B.magnitude * C.magnitude)); //offset =  arccos((b^2 + c^2 - a^2)/2bc).
-            Debug.Log("Left Eye offset: " + offset * Mathf.Rad2Deg);
-            //Debug.Log("Left Eye Vals: " + A + " " + B + " " + C);
-            //Debug.Log("Left Eye Mags: " + A.magnitude + " " + B.magnitude + " " + C.magnitude);
+            if (logPrint)
+            {
+                Debug.Log("Left Eye offset: " + offset * Mathf.Rad2Deg);
+                //Debug.Log("Left Eye Vals: " + A + " " + B + " " + C);
+                //Debug.Log("Left Eye Mags: " + A.magnitude + " " + B.magnitude + " " + C.magnitude);
+            }
 
             //right eye
             //a
@@ -149,9 +165,12 @@ public class TheWorld : MonoBehaviour
             offset = Mathf.Acos(
                 ((B.magnitude * B.magnitude) + (C.magnitude * C.magnitude) - (A.magnitude * A.magnitude))
                 / (2 * B.magnitude * C.magnitude)); //offset =  arccos((b^2 + c^2 - a^2)/2bc).
-            Debug.Log("Right Eye offset: " + offset * Mathf.Rad2Deg);
-            //Debug.Log("Right Eye Vals: " + A + " " + B + " " + C);
-            //Debug.Log("Right Eye Mags: " + A.magnitude + " " + B.magnitude + " " + C.magnitude);
+            if (logPrint)
+            {
+                Debug.Log("Right Eye offset: " + offset * Mathf.Rad2Deg);
+                //Debug.Log("Right Eye Vals: " + A + " " + B + " " + C);
+                //Debug.Log("Right Eye Mags: " + A.magnitude + " " + B.magnitude + " " + C.magnitude);
+            }
 
             //move everything away from the center a little
             Vector3 tempPos;
