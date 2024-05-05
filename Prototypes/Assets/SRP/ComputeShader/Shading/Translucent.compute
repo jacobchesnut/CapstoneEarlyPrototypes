@@ -1,0 +1,75 @@
+﻿#ifndef Translucent_COMPUTE
+#define Translucent_COMPUTE
+
+StructuredBuffer<float4> TranslucentMat_color;
+StructuredBuffer<float> TranslucentMat_reflectivity;
+StructuredBuffer<float> TranslucentMat_secondaryRayEffect;
+StructuredBuffer<float> TranslucentMat_transparency;
+
+// [shader(Translucent)]
+void Translucent_SecRays(
+    inout Ray ray,
+    RayHit hit,
+    inout SecRaysAtHit secRaysAtHit
+) 
+{
+    if (ray.gen <= 1) {
+        return;
+    }
+
+    // Translucent
+    secRaysAtHit.srays[0].origin = hit.position;
+    secRaysAtHit.srays[0].direction = ray.direction;
+    secRaysAtHit.srays[0].color = float3(0, 0, 0);
+    secRaysAtHit.srays[0].gen = ray.gen - 1;
+    secRaysAtHit.srays[0].medium = hit.mediumToEnter;   // Translucent ray enter the object
+    secRaysAtHit.srays[0].tmin = 0.01f;
+    secRaysAtHit.srays[0].weight = TranslucentMat_transparency[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+    // Reflective
+    secRaysAtHit.srays[1].origin = hit.position;
+    secRaysAtHit.srays[1].direction = normalize(reflect(ray.direction, hit.normal));
+    secRaysAtHit.srays[1].color = float3(0, 0, 0);
+    secRaysAtHit.srays[1].gen = ray.gen - 1;
+    secRaysAtHit.srays[1].medium = hit.mediumToLeave;   // Reflective ray did not enter the object, medium is the surrounding
+    secRaysAtHit.srays[1].tmin = 0.01f;
+    secRaysAtHit.srays[1].weight = TranslucentMat_reflectivity[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+}
+
+float3 Translucent(
+   inout Ray ray,
+   RayHit hit,
+   float3 ambientLightUpper,
+   float3 secondaryRayColor
+)
+{
+    float3 color = float3(0, 0, 0);
+    float4 matColor = TranslucentMat_color[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+    [fastopt] for(int l = 0; l < _NumOfLights; l++)
+    {
+        LightHit light0 = GetIlluminate(hit.position, 0, hit.primitiveId, l);   // We are calculating the surface color, so medium = 0
+
+        float nDotL = dot(hit.normal, -1 * light0.direction);
+        if (nDotL >= 0)
+        {
+            color += matColor.xyz * light0.color * nDotL;
+        }
+    }
+
+    float sec = TranslucentMat_secondaryRayEffect[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+    return (1 - sec) * color + sec * secondaryRayColor;
+}
+
+float3 Translucent_OnShadowRayHit(Ray ray, RayHit hit)
+{
+    float sec = TranslucentMat_secondaryRayEffect[_Primitives[hit.primitiveId].materialInstanceIndex];
+    float alpha = TranslucentMat_transparency[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+    return sec * alpha * ray.color; // Transparency based on material settings
+}
+
+
+#endif // Reflective_COMPUTE 

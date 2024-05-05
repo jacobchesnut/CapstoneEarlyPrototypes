@@ -144,4 +144,6 @@ public class CameraRenderCall : MonoBehaviour
         //otherwise send eye vector and frustum
         ScriptToMessage.RenderingImage(src, dst, eyeObject.forward, trueLookInformation, frustumInformation);
     }
+
+    
 }

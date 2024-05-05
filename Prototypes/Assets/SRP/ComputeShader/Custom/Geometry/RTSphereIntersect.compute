@@ -1,0 +1,43 @@
+﻿#ifndef RTSphere_Intersect_Compute
+#define RTSphere_Intersect_Compute
+
+// [intersect(RTSphere)]
+
+struct RTSphere
+{
+    float3 center;
+    float radius;
+};
+
+StructuredBuffer<RTSphere> _RTSphere;
+
+void RTSphereIntersect(Ray ray, inout RayHit bestHit, Primitive primitive, int primitiveId)
+{
+    // For every sphere in the primitive, we do:
+
+    [fastopt] for(int s = 0; s < primitive.geometryInstanceCount; s++)
+    {
+        RTSphere sphere = _RTSphere[primitive.geometryInstanceBegin + s];
+
+        float2 result = SphereIntersectUtils(ray, bestHit, sphere.center, sphere.radius, primitiveId);
+
+        if (result.x != -1) // Has intersect?
+        {
+            bestHit.primitiveId = primitiveId;
+
+            if (result.y <= 0)  // Ray is inside->outside?
+            {
+                // Ray is inside->outside
+                bestHit.mediumToEnter = 0; // FIXME: Even if an inside ray is leaving, it may not necessary entering the air
+                bestHit.mediumToLeave = primitiveId;
+            }
+            else
+            {
+                bestHit.mediumToEnter = primitiveId;  // Ray is outside->inside
+                bestHit.mediumToLeave = ray.medium;
+            }
+        }
+    }
+}
+
+#endif

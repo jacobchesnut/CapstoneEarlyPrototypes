@@ -1,0 +1,27 @@
+﻿#ifndef CustomOrthographic_RayGen_Compute
+#define CustomOrthographic_RayGen_Compute
+
+// [RayGeneration(CustomOrthographic)]
+Ray CustomOrthographic(uint width, uint height, uint3 id, uint iter)
+{
+    // Transform pixel to [-1,1] range
+    // id [0,0] -> [1024, 768]
+    // uv [-1,-1] -> [1,1]
+    float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
+
+    float locX = _CameraOrthographicSize * width / height * uv.x;
+    float locY = _CameraOrthographicSize * uv.y;
+
+    // float3 origin = mul(_CameraToWorld, float4(uv, 0.0f, 1.0f)).xyz;
+    float3 origin = mul(_CameraLocalToWorld, float4(locX, locY, 0.0f, 1.0f)).xyz;
+    // Transform the direction from camera to world space and normalize
+    float3 direction = normalize(_CameraForward.xyz);
+    return CreateRay(origin, direction, 4);
+}
+
+uint CustomOrthographicNumberOfRay(uint width, uint height, uint3 id)
+{
+    return 1;
+}
+
+#endif

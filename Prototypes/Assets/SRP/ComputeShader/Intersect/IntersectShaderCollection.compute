@@ -1,0 +1,29 @@
+// =============================================
+// =         Intersect Shader Collection       =
+// = Auto-generated File. Do not edit manually =
+// =============================================
+
+#include "../Custom/Geometry/RTSphereIntersect.compute"
+#include "../Custom/Geometry/RTTriangleIntersect.compute"
+#include "../Custom/Geometry/RTMeshBVHIntersect.compute"
+#include "../Custom/Geometry/RTMeshBVHIntersect.compute"
+#include "../Custom/Geometry/RTSphereIntersect.compute"
+#include "../Custom/Geometry/RTTriangleIntersect.compute"
+
+void IntersectByGeometry(Ray ray, inout RayHit bestHit, int primitiveId)
+{
+   Primitive pri = _Primitives[primitiveId];
+
+   switch(pri.geometryIndex)
+   {
+        case 0:
+            RTMeshBVHIntersect(ray, bestHit, pri, primitiveId);
+        break;
+        case 1:
+            RTSphereIntersect(ray, bestHit, pri, primitiveId);
+        break;
+        case 2:
+            RTTriangleIntersect(ray, bestHit, pri, primitiveId);
+        break;
+   }
+}

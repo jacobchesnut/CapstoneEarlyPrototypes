@@ -1,0 +1,53 @@
+﻿#ifndef PHONG_COMPUTE
+#define PHONG_COMPUTE
+
+StructuredBuffer<float4> DemoMat_color;
+StructuredBuffer<int> DemoMat_main;
+
+// [shader(Phong)]
+
+// Forward declaration
+LightHit GetIlluminate(float3 hitPos, int medium, int primitiveID, int lightID);
+
+void Phong_SecRays(
+    inout Ray ray,
+    RayHit hit,
+    inout SecRaysAtHit secRaysAtHit
+)
+{
+}
+
+float3 Phong(
+   inout Ray ray,
+   RayHit hit,
+   float3 ambientLightUpper,
+   float3 secondaryRayColor
+)
+{
+    int w = 1024;
+    int h = 1024;
+    int texIndex = TextureUnlitMat_main[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+    float3 color = float3(0, 0, 0);
+
+    float3 tex = _MatTexture[uint3(floor(hit.uv.x * w), floor(hit.uv.y * h), texIndex)];
+
+    float4 mat = DemoMat_color[_Primitives[hit.primitiveId].materialInstanceIndex];
+
+    [fastopt] for(int l = 0; l < _NumOfLights; l++)
+    {
+        LightHit light0 = GetIlluminate(hit.position, ray.medium, hit.primitiveId, l);   // Phong is hit on the surface, so medium = whereever the ray is traversing
+
+        float nDotL = saturate(dot(hit.normal, -1 * light0.direction));
+        color += mat.xyz * tex * light0.color * nDotL;
+    }
+
+   return color;
+}
+
+float3 Phong_OnShadowRayHit(Ray ray, RayHit hit)
+{
+    return float3(0, 0, 0); // Opaque
+}
+
+#endif // PHONG_COMPUTE

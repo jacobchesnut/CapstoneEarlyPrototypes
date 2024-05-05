@@ -1,0 +1,75 @@
+#ifndef CUSTOM_CLOSEST_HIT
+#define CUSTOM_CLOSEST_HIT
+// =============================================
+// =        Closet Hit Shader Collection       =
+// = Auto-generated File. Do not edit manually =
+// =============================================
+
+#include "TextureUnlit.compute"
+#include "Volumetric.compute"
+#include "Phong.compute"
+#include "Refractive.compute"
+#include "Translucent.compute"
+#include "Phong.compute"
+#include "Refractive.compute"
+#include "TextureUnlit.compute"
+#include "Translucent.compute"
+#include "Volumetric.compute"
+void SecRays(Ray ray, RayHit hit, inout SecRaysAtHit secRays)
+{
+     switch(_Primitives[hit.primitiveId].materialIndex)
+     {
+        case 0:
+            Phong_SecRays(ray, hit, secRays);
+        break;
+        case 1:
+            Refractive_SecRays(ray, hit, secRays);
+        break;
+        case 2:
+            TextureUnlit_SecRays(ray, hit, secRays);
+        break;
+        case 3:
+            Translucent_SecRays(ray, hit, secRays);
+        break;
+        case 4:
+            Volumetric_SecRays(ray, hit, secRays);
+        break;
+     }
+}
+float3 ClosestHit(inout Ray ray, RayHit hit, float3 ambientLightUpper, float3 secondaryRayColor)
+{
+switch(_Primitives[hit.primitiveId].materialIndex)
+{
+case 0:
+   return Phong(ray, hit, ambientLightUpper, secondaryRayColor);
+case 1:
+   return Refractive(ray, hit, ambientLightUpper, secondaryRayColor);
+case 2:
+   return TextureUnlit(ray, hit, ambientLightUpper, secondaryRayColor);
+case 3:
+   return Translucent(ray, hit, ambientLightUpper, secondaryRayColor);
+case 4:
+   return Volumetric(ray, hit, ambientLightUpper, secondaryRayColor);
+default:
+  return float3(0, 1, 1);
+}
+}
+float3 OnShadowRayHit(Ray ray, RayHit hit)
+{
+switch(_Primitives[hit.primitiveId].materialIndex)
+{
+        case 0:
+           return Phong_OnShadowRayHit(ray, hit);
+        case 1:
+           return Refractive_OnShadowRayHit(ray, hit);
+        case 2:
+           return TextureUnlit_OnShadowRayHit(ray, hit);
+        case 3:
+           return Translucent_OnShadowRayHit(ray, hit);
+        case 4:
+           return Volumetric_OnShadowRayHit(ray, hit);
+        default:
+          return float3(1, 0, 1);
+}
+}
+#endif  // CUSTOM_CLOSEST_HIT

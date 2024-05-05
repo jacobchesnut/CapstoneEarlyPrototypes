@@ -1,0 +1,68 @@
+﻿#ifndef Refractive_COMPUTE
+#define Refractive_COMPUTE
+
+float RefractiveMat_refractiveIndex;
+
+// [shader(Refractive)]
+
+void Refractive_SecRays(
+    inout Ray ray,
+    RayHit hit,
+    inout SecRaysAtHit secRaysAtHit
+) 
+{
+    if (ray.gen <= 1) {
+        return;
+    }
+
+    float refractiveIndex = RefractiveMat_refractiveIndex;
+    if (refractiveIndex == 0)
+    {
+        refractiveIndex = 0.0001f;
+    }
+
+    if (hit.mediumToEnter == 0)
+    {
+        refractiveIndex = 1 / refractiveIndex;
+    }
+
+
+    int inside = 1;
+    if (ray.medium > 0) {
+        // If my parent is an inside ray and hit the boundary of the geometry, then I should be leaving the geometry
+        inside = 0;
+    }
+
+    secRaysAtHit.srays[0].origin = hit.position;
+    // secRaysAtHit.srays[0].direction = hit.normal;
+    // float inAngle = acos(dot(-ray.direction, hit.normal));
+    // float outAngle = asin(sin(inAngle) / RefractiveMat_refractiveIndex);
+    // float3 a = -ray.direction / RefractiveMat_refractiveIndex;
+    // float b = cos(outAngle) - cos(inAngle) / RefractiveMat_refractiveIndex;
+    // secRaysAtHit.srays[0].direction = normalize(-1 * (a + (b * hit.normal)));
+    secRaysAtHit.srays[0].direction = normalize(refract(ray.direction, hit.normal, refractiveIndex));
+    secRaysAtHit.srays[0].color = float3(0, 0, 0);
+    secRaysAtHit.srays[0].gen = ray.gen - 1;
+    secRaysAtHit.srays[0].medium = hit.mediumToEnter;
+    secRaysAtHit.srays[0].tmin = 0; // Try to see if tmin set to 0 help the refraction
+    secRaysAtHit.srays[0].weight = 1;
+
+}
+
+float3 Refractive(
+   inout Ray ray,
+   RayHit hit,
+   float3 ambientLightUpper,
+   float3 secondaryRayColor
+)
+{
+    return 0.25f * secondaryRayColor;
+}
+
+float3 Refractive_OnShadowRayHit(Ray ray, RayHit hit)
+{
+    return ray.color;   // We do not support any caustic effect so just assume the medium is transparent
+}
+
+
+#endif // Refractive_COMPUTE 

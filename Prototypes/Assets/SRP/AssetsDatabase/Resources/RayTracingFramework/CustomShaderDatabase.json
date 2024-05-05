@@ -1,0 +1,58 @@
+{
+  "intersect": {
+    "a80486cd-fd8a-4056-8bec-262032205114": {
+      "name": "RTTriangle",
+      "absPath": "Assets/SRP/ComputeShader/Custom/Geometry/RTTriangleIntersect.compute",
+      "shaderType": 3
+    },
+    "47924f01-597c-4371-8442-d375d585e790": {
+      "name": "RTSphere",
+      "absPath": "Assets/SRP/ComputeShader/Custom/Geometry/RTSphereIntersect.compute",
+      "shaderType": 3
+    },
+    "cb19bb8d-3ecf-42fc-8e0e-2efc3dabeadb": {
+      "name": "RTMeshBVH",
+      "absPath": "Assets/SRP/ComputeShader/Custom/Geometry/RTMeshBVHIntersect.compute",
+      "shaderType": 3
+    }
+  },
+  "closetHit": {
+    "39feb2bd-5273-4001-be13-a9b18abc1368": {
+      "name": "Phong",
+      "absPath": "Assets/SRP/ComputeShader/Shading/Phong.compute",
+      "shaderType": 1
+    },
+    "fc7d9fc5-fa59-47b1-9910-cae29a9c787e": {
+      "name": "Translucent",
+      "absPath": "Assets/SRP/ComputeShader/Shading/Translucent.compute",
+      "shaderType": 1
+    },
+    "ce985be6-9c4f-4fa0-92e9-a6ccf763e5db": {
+      "name": "Refractive",
+      "absPath": "Assets/SRP/ComputeShader/Shading/Refractive.compute",
+      "shaderType": 1
+    },
+    "36329863-824d-46f3-97a5-914566f926a3": {
+      "name": "Volumetric",
+      "absPath": "Assets/SRP/ComputeShader/Shading/Volumetric.compute",
+      "shaderType": 1
+    },
+    "2f8e6059-9978-4d3a-a46a-530e79d6e5e4": {
+      "name": "TextureUnlit",
+      "absPath": "Assets/SRP/ComputeShader/Shading/TextureUnlit.compute",
+      "shaderType": 1
+    }
+  },
+  "lights": {
+    "a0b58e92-ec2e-417f-9026-5030663e0a08": {
+      "name": "CustomPointLight",
+      "absPath": "Assets/SRP/ComputeShader/Custom/Lights/CustomPointLight.compute",
+      "shaderType": 4
+    },
+    "5a7e6178-ac2d-4824-9dad-f560a6074d72": {
+      "name": "CustomDirectionalLight",
+      "absPath": "Assets/SRP/ComputeShader/Custom/Lights/CustomDirectionalLight.compute",
+      "shaderType": 4
+    }
+  }
+}

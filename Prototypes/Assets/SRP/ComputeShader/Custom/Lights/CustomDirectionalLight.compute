@@ -1,0 +1,25 @@
+﻿// [light(CustomDirectionalLight)]
+
+#ifndef Custom_DirectionalLight_COMPUTE
+#define Custom_DirectionalLight_COMPUTE
+
+#include "../../RayCasting/Trace.compute"
+
+StructuredBuffer<float4> CustomDirectionalLight_color;
+
+LightHit GetIlluminate_CustomDirectionalLight(LightInfo lightInfo, float3 hitPos, int medium, int primitiveId)
+{
+    Ray ray;
+    ray.color = CustomDirectionalLight_color[lightInfo.instanceIndex].xyz;
+    ray.origin = hitPos;
+    ray.direction = -1 * lightInfo.rotation;
+    ray.gen = 1;
+    ray.tmin = 0.0001f;
+    ray.tmax = 1.#INF;
+    ray.medium = medium;
+    ray.weight = 1;
+    
+    return CreateLightHit(ShadowTrace(ray, primitiveId), lightInfo.rotation);
+}
+
+#endif
