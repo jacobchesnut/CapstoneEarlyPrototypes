@@ -47,6 +47,9 @@ StructuredBuffer<LightInfo> _Lights;
 // Ambient
 float3 _AmbientLightUpper;
 
+// For VR eye difference
+bool _LeftEye;
+
 // Placeholder
 float3 missShader(float3 direction) {
     // Sample the skybox and write it
@@ -231,6 +234,36 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             
         finalColor += float4(result, 1) / numberOfRay;
     }
-    
+
+    //currently static numbers for the VR cameras
+    //int texWidth = 2160;
+    //int texHeight = 2224;
+    //int FOV = 90;
+    //int xOffset = 11;
+    //if(_LeftEye){
+    //    xOffset = -11;
+    //}
+    //int yOffset = -10;
+
+    //int2 finalXY = {id.x + ((texWidth * xOffset) / FOV), id.y + ((texHeight * yOffset) / FOV)};
+
+    //wrap around if the offset places us outside the array bounds
+    //if(finalXY.x < 0){
+    //    finalXY.x += texWidth;
+    //}
+    //if(finalXY.x >= texWidth){
+    //    finalXY.x -= texWidth;
+    //}
+    //if(finalXY.y < 0){
+    //    finalXY.y += texHeight;
+    //}
+    //if(finalXY.y >= texHeight){
+    //    finalXY.y += texHeight;
+    //} 
+    //int finalX = (texWidth * xOffset) / FOV;
+    //int finalY = (texHeight * yOffset) / FOV;
+
+    //Result[finalXY] = finalColor;
     Result[id.xy] = finalColor;
+    
 }

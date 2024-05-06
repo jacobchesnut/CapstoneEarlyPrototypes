@@ -143,7 +143,7 @@ namespace OpenRT
             {
                 RunTargetTextureInit(ref m_target, camera);
                 RunClearCanvas(commands, camera);
-                RunSetCameraToMainShader(camera);
+                RunSetCameraToMainShader(camera, i);
                 RunRayTracing(ref commands, m_target);
                 RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i]);
                 i++;
@@ -186,8 +186,8 @@ namespace OpenRT
 
         private void RunTargetTextureInit(ref RenderTexture targetTexture, Camera sampleCam)
         {
-            //if (targetTexture == null || targetTexture.width != Screen.width || Screen.height != sampleCam.scaledPixelHeight)
-            if (targetTexture == null || targetTexture.width != sampleCam.scaledPixelWidth || targetTexture.height != sampleCam.scaledPixelHeight)
+            //if (targetTexture == null || targetTexture.width != sampleCam.scaledPixelWidth || targetTexture.height != sampleCam.scaledPixelHeight)
+            if (targetTexture == null || targetTexture.width != 2160 || targetTexture.height != 2224)
             {
                 // Release render texture if we already have one
                 if (targetTexture != null)
@@ -196,13 +196,12 @@ namespace OpenRT
                 }
 
                 // Get a render target for Ray Tracing
-                
-                targetTexture = new RenderTexture(sampleCam.scaledPixelWidth, sampleCam.scaledPixelHeight, 0,
-                    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
-                //targetTexture = new RenderTexture(Screen.width, Screen.height, 0,
-                //    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
 
-                
+                //targetTexture = new RenderTexture(sampleCam.scaledPixelWidth, sampleCam.scaledPixelHeight, 0,
+                //    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+                targetTexture = new RenderTexture(2160, 2224, 0,
+                    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+
                 //targetTexture = new RenderTexture(UnityEngine.XR.XRSettings.eyeTextureDesc);
                 targetTexture.enableRandomWrite = true;
                 targetTexture.Create();
@@ -321,13 +320,25 @@ namespace OpenRT
                                                    ref mainShader);
         }
 
-        private void RunSetCameraToMainShader(Camera camera)
+        private void RunSetCameraToMainShader(Camera camera, int camNumber)
         {
             m_mainShader.SetMatrix("_CameraToWorld", camera.cameraToWorldMatrix);
             m_mainShader.SetVector("_CameraForward", camera.transform.forward);
             m_mainShader.SetMatrix("_CameraInverseProjection", camera.projectionMatrix.inverse);
             m_mainShader.SetFloat("_CameraOrthographicSize", camera.orthographicSize);
             m_mainShader.SetMatrix("_CameraLocalToWorld", camera.transform.localToWorldMatrix);
+
+            if(camNumber == 0)
+            {
+                //assume left camera
+                m_mainShader.SetBool("_LeftEye", true);
+            }
+            else
+            {
+                //assume right camera
+                m_mainShader.SetBool("_LeftEye", false);
+            }
+            
         }
 
         private void RunSetAmbientToMainShader(RenderPipelineConfigObject config)

@@ -233,8 +233,10 @@ public class SceneControl : MonoBehaviour
         captureRenderTexture(dst, "dst");
     }
 
-    public void RenderingImage(RenderTexture src, RenderTexture dst, Vector3 eyeLookVector, Vector3 trueLookVector, Vector3 frustumInformation)
+    public void RenderingImage(RenderTexture src, RenderTexture dst, Vector3 eyeLookVector, Vector3 trueLookVector, Vector3 frustumInformation, RenderTexture oldTex)
     {
+        //give previous frame info
+        FoveatedMat.SetTexture("_PreviousTex", oldTex);
         //set camera frustum info
         FoveatedMat.SetVector("_frustumVector", new Vector4(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0));
         //set the eye look vector as the used direction for the shader

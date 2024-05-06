@@ -1160,7 +1160,7 @@ MonoBehaviour:
   showRegionsTint: 1
   showOverlay: 1
   showAverageBorder: 0
-  showVariableBorder: 1
+  showVariableBorder: 0
   framesToCapture: 4
   cameraNameToCapture: null
   angleOffsetX: 0

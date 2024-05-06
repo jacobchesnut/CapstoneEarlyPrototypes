@@ -28,6 +28,7 @@ public class CameraRenderCall : MonoBehaviour
     //attempting to access intermediate texture stages by saving render texture references
     private RenderTexture savedSRCTexture = null;
     private RenderTexture savedDSTTexture = null;
+    private RenderTexture savedTexture = null;
 
     private void Start()
     {
@@ -115,6 +116,11 @@ public class CameraRenderCall : MonoBehaviour
         {
             savedDSTTexture = dst;
         }
+        if(savedTexture == null)
+        {
+            savedTexture = new RenderTexture(src.width, src.height, src.depth);
+            Graphics.Blit(src, savedTexture); //set to src for the first pass
+        }
         //set the camera's name for the potential printout
         ScriptToMessage.cameraNameToCapture = cameraName;
         //set the calibration info
@@ -142,7 +148,9 @@ public class CameraRenderCall : MonoBehaviour
         simTarget.RotateAround(transform.position, new Vector3(0, -1, 0), transform.rotation.eulerAngles.y); //backwards y
         Vector3 trueLookInformation = simTarget.position - transform.position; //the direction of this vector should now be correct relative to camera space
         //otherwise send eye vector and frustum
-        ScriptToMessage.RenderingImage(src, dst, eyeObject.forward, trueLookInformation, frustumInformation);
+        ScriptToMessage.RenderingImage(src, dst, eyeObject.forward, trueLookInformation, frustumInformation, savedTexture);
+        //now blit the current frame over
+        Graphics.Blit(dst, savedTexture);
     }
 
     

@@ -3,6 +3,7 @@ Shader "Unlit/FoveatedShader"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {} // this is the src of Blit
+        _PreviousTex ("_PreviousTex", 2D) = "white" {} //past frame
     }
     
     SubShader
@@ -14,6 +15,8 @@ Shader "Unlit/FoveatedShader"
         Pass
         {   
             CGPROGRAM
+            // Upgrade NOTE: excluded shader from DX11, OpenGL ES 2.0 because it uses unsized arrays
+            //#pragma exclude_renderers d3d11 gles
             #pragma vertex vert
             #pragma fragment frag
 
@@ -37,7 +40,11 @@ Shader "Unlit/FoveatedShader"
                 return o;
             }
 
+
+            
+
             sampler2D _MainTex;
+            sampler2D _PreviousTex;
 
             //Foveated specifics
             float4 _frustumVector; //frustum info (width, height, distance), a is unused
@@ -77,10 +84,13 @@ Shader "Unlit/FoveatedShader"
                 if (_flag & FLAG)                       \
                     c1 = DEBUG_ACTION;                  \
             }
-
             
+
             float4 frag (v2f fromV) : SV_Target
             {
+                
+
+
                 float4 c1 = tex2D(_MainTex, fromV.uv); //this is the color of the pixel
                 //check the angle distance from the look direction
                 //angle = arccos(a.b / magA + magB)
@@ -133,9 +143,14 @@ Shader "Unlit/FoveatedShader"
 
                 //dont render (show black) outside the outside angle
                 if(angle > outsideAngle){
-                    c1.r = 0;
-                    c1.g = 0;
-                    c1.b = 0;
+                    //c1.r = 0;
+                    //c1.g = 0;
+                    //c1.b = 0;
+                    //c1.a = 0;
+                    //option for showing past frame:
+                    float one = 1;
+                    float2 tempPos = {fromV.uv.x, one-fromV.uv.y};
+                    c1 = tex2D(_PreviousTex, tempPos);
                     return c1;
                 }
 

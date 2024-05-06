@@ -25,7 +25,8 @@ public class TryCreateJoePipeline : MonoBehaviour
         textureToRenderTo = new RenderTexture[camerasToRenderTo.Length];
         for(int i = 0; i < camerasToRenderTo.Length; i++)
         {
-            textureToRenderTo[i] = new RenderTexture(camerasToRenderTo[i].scaledPixelWidth, camerasToRenderTo[i].scaledPixelHeight, 0);
+            //textureToRenderTo[i] = new RenderTexture(camerasToRenderTo[i].scaledPixelWidth, camerasToRenderTo[i].scaledPixelHeight, 0);
+            textureToRenderTo[i] = new RenderTexture(2160, 2224, 0); //hard coded to vr dimensions because of oddities with camera pixel width and heigh
         }
         //textureToRenderTo = new RenderTexture(Screen.width, Screen.height, 0); //currently screen width and height, will need pixel counts for VR camera
     }
