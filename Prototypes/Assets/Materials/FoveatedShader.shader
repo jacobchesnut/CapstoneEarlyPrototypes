@@ -141,16 +141,21 @@ Shader "Unlit/FoveatedShader"
                     
                 }
 
+                //calculate angle from center of screen
+                //float dotCenter = vecA.z * 1;
+                //float angleCenter = acos(1 / magA); //using 0,0,1 as a normalized forward vector, we get a lot of ones so to simplify the math this is the formula
+
                 //dont render (show black) outside the outside angle
                 if(angle > outsideAngle){
-                    //c1.r = 0;
-                    //c1.g = 0;
-                    //c1.b = 0;
+                //if(angleCenter > outsideAngle){
+                    c1.r = 0;
+                    c1.g = 0;
+                    c1.b = 0;
                     //c1.a = 0;
                     //option for showing past frame:
-                    float one = 1;
-                    float2 tempPos = {fromV.uv.x, one-fromV.uv.y};
-                    c1 = tex2D(_PreviousTex, tempPos);
+                    //float one = 1;
+                    //float2 tempPos = {fromV.uv.x, one-fromV.uv.y};
+                    //c1 = tex2D(_PreviousTex, tempPos);
                     return c1;
                 }
 

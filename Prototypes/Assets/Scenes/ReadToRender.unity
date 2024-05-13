@@ -217,6 +217,7 @@ Transform:
   m_Children:
   - {fileID: 1901490908}
   - {fileID: 2078279766}
+  - {fileID: 565892830}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &213470307
@@ -332,7 +333,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   closestHitGUID: 39feb2bd-5273-4001-be13-a9b18abc1368
-  color: {r: 1, g: 0, b: 0, a: 0}
+  color: {r: 1, g: 1, b: 1, a: 0}
   main: {fileID: 2800000, guid: 96e88ca6e1130734d98df356f57c8ae5, type: 3}
 --- !u!4 &213470313
 Transform:
@@ -590,6 +591,85 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipelineReference: {fileID: 455045219}
   texToReadFrom: 2
+--- !u!1 &565892829
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 565892830}
+  - component: {fileID: 565892833}
+  - component: {fileID: 565892832}
+  - component: {fileID: 565892831}
+  m_Layer: 0
+  m_Name: unlit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &565892830
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565892829}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 148603962}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &565892831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565892829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66502c823bf4a4d5185569b16d96f26b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  geometry: {fileID: 0}
+  material: {fileID: 0}
+--- !u!114 &565892832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565892829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81936f8c0f87c914d941ff1114da74cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  intersectShaderGUID: 47924f01-597c-4371-8442-d375d585e790
+  sphereData:
+    center: {x: 0, y: 0, z: 0}
+    radius: 0
+--- !u!114 &565892833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565892829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a232bddc3b367a4e8e990465bb32a36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  closestHitGUID: 2f8e6059-9978-4d3a-a46a-530e79d6e5e4
+  color: {r: 0, g: 0, b: 0, a: 0}
+  main: {fileID: 2800000, guid: ecb5268dcb2fa014b97fbb090495eee1, type: 3}
 --- !u!1 &755405642
 GameObject:
   m_ObjectHideFlags: 0
@@ -604,7 +684,6 @@ GameObject:
   - component: {fileID: 755405645}
   - component: {fileID: 755405644}
   - component: {fileID: 755405643}
-  - component: {fileID: 755405649}
   m_Layer: 0
   m_Name: TestMesh (1)
   m_TagString: Untagged
@@ -675,7 +754,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   geometry: {fileID: 755405647}
-  material: {fileID: 755405649}
+  material: {fileID: 0}
 --- !u!114 &755405646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -720,21 +799,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &755405649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 755405642}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a232bddc3b367a4e8e990465bb32a36, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  closestHitGUID: 39feb2bd-5273-4001-be13-a9b18abc1368
-  color: {r: 1, g: 1, b: 1, a: 0}
-  main: {fileID: 2800000, guid: ecb5268dcb2fa014b97fbb090495eee1, type: 3}
 --- !u!1 &881186271
 GameObject:
   m_ObjectHideFlags: 0
@@ -962,7 +1026,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   closestHitGUID: 39feb2bd-5273-4001-be13-a9b18abc1368
-  color: {r: 1, g: 0, b: 0, a: 0}
+  color: {r: 1, g: 1, b: 1, a: 0}
   main: {fileID: 2800000, guid: 96e88ca6e1130734d98df356f57c8ae5, type: 3}
 --- !u!114 &1417762255
 MonoBehaviour:
