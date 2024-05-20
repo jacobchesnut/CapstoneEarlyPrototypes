@@ -331,12 +331,12 @@ namespace OpenRT
             if(camNumber == 0)
             {
                 //assume left camera
-                m_mainShader.SetBool("_LeftEye", true);
+                m_mainShader.SetBool("_LeftEye", false);
             }
             else
             {
                 //assume right camera
-                m_mainShader.SetBool("_LeftEye", false);
+                m_mainShader.SetBool("_LeftEye", true);
             }
             
         }

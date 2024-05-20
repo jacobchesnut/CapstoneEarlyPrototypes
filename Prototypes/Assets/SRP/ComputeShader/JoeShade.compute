@@ -263,7 +263,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     //int finalX = (texWidth * xOffset) / FOV;
     //int finalY = (texHeight * yOffset) / FOV;
 
-    //Result[finalXY] = finalColor;
-    Result[id.xy] = finalColor;
+    Result[finalXY] = finalColor;
+    //Result[id.xy] = finalColor;
     
 }
