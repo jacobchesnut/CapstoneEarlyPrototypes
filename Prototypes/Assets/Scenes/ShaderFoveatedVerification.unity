@@ -4807,6 +4807,7 @@ MonoBehaviour:
   downOutsideAngle: 90
   leftOutsideAngle: 90
   FoveatedMat: {fileID: 2100000, guid: efb29d8476336014d86bd2b26464f423, type: 2}
+  BlurMaterial: {fileID: 2100000, guid: e497baf384b40924184f6083151d0d18, type: 2}
 --- !u!1001 &973270198
 PrefabInstance:
   m_ObjectHideFlags: 0

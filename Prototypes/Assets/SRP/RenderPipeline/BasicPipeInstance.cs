@@ -217,10 +217,10 @@ namespace OpenRT
         private void RunClearCanvas(CommandBuffer buffer, Camera camera)
         {
             CameraClearFlags clearFlags = camera.clearFlags; // Each camera can config its clear flag to determine what should be shown if nothing can be seen by the camera
-            buffer.ClearRenderTarget(
-                ((clearFlags & CameraClearFlags.Depth) != 0),
-                ((clearFlags & CameraClearFlags.Color) != 0),
-                camera.backgroundColor);
+            //buffer.ClearRenderTarget(
+            //    ((clearFlags & CameraClearFlags.Depth) != 0),
+            //    ((clearFlags & CameraClearFlags.Color) != 0),
+            //    camera.backgroundColor);
         }
 
         private void LoadBufferWithGeometryInstances(SceneParseResult sceneParseResult,
@@ -417,7 +417,7 @@ namespace OpenRT
             if (threadGroupsX > 0 && threadGroupsY > 0)
             {
                 // m_mainShader.Dispatch(kIndex, threadGroupsX, threadGroupsY, 1);
-                commands.DispatchCompute(computeShader: m_mainShader, kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+                //commands.DispatchCompute(computeShader: m_mainShader, kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
             }
         }
 
@@ -485,6 +485,8 @@ namespace OpenRT
             //}
 
             Graphics.Blit(targeTexture, textureToWriteTo);
+
+            //commands.Clear(); // Clear the command buffer
         }
     }
 }

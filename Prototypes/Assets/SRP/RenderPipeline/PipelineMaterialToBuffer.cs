@@ -7,6 +7,10 @@ namespace OpenRT
 {
     static class PipelineMaterialToBuffer
     {
+        //class holder for texture2d to delete when finished
+        public static Texture2DArray oldArray = null;
+
+
         public static void MaterialsToBuffer(List<ComputeBuffer> computeBuffersForMaterialProperties,
                                              in SceneParseResult sceneParseResult,
                                              ref ComputeShader mainShader)
@@ -72,7 +76,14 @@ namespace OpenRT
                 // Do NOT release the compute buffer before the actual draw commands is being sent
             }
 
+            if(oldArray != null)
+            {
+                //destroy old texture array to avoid memory leak.
+                Texture2DArray.Destroy(oldArray);
+            }
+
             Texture2DArray texArr = new Texture2DArray(1024, 1024, sceneParseResult.m_textureCollection.Count, TextureFormat.RGBA32, 1, false);
+            oldArray = texArr;
             int texCounter = 0;
             foreach (var tex in sceneParseResult.m_textureCollection)
             {
@@ -88,6 +99,11 @@ namespace OpenRT
                 }
 
             }
+
+            //for testing which textures are being sent in the array:
+            //this says the correct number of textures are being sent
+            //Debug.Log("texture array being sent: " + texArr.depth);
+
             mainShader.SetTexture(mainShader.FindKernel("CSMain"), "_MatTexture", texArr);
 
             foreach (var materialTextureIndex in sceneParseResult.m_materialsTextureIndexList)

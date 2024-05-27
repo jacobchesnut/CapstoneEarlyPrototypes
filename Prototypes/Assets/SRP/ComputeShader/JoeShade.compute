@@ -243,7 +243,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     if(_LeftEye){
         xOffset = -11;
     }
-    int yOffset = -10;
+    int yOffset = 10;
 
     int2 finalXY = {id.x + ((texWidth * xOffset) / FOV), id.y + ((texHeight * yOffset) / FOV)};
 
@@ -262,7 +262,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     } 
     //int finalX = (texWidth * xOffset) / FOV;
     //int finalY = (texHeight * yOffset) / FOV;
-
+    //test change to force recompile?
     Result[finalXY] = finalColor;
     //Result[id.xy] = finalColor;
     

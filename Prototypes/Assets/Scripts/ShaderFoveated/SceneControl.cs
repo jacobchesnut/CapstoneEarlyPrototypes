@@ -110,6 +110,11 @@ public class SceneControl : MonoBehaviour
     */
     public Material FoveatedMat = null;
 
+    //material for blur
+    public Material BlurMaterial = null;
+
+    //render texture for blur
+    private RenderTexture middle = null;
 
     //ground plane to calculate distances from:
     //public Transform groundPlaneTransform = null;
@@ -166,7 +171,22 @@ public class SceneControl : MonoBehaviour
         //set flag
         int theFlag = calculateBitmask();
         FoveatedMat.SetInteger("_flag", theFlag);
-        
+
+
+        //Blur
+        BlurMaterial.SetVector("_frustumVector", new Vector4(frustumInfo.x, frustumInfo.y, frustumInfo.z, 0));
+        BlurMaterial.SetVector("_viewVector", new Vector4(gazeInfo.x, gazeInfo.y, gazeInfo.z, 0));
+        BlurMaterial.SetFloat("_widthPix", Screen.width);
+        BlurMaterial.SetFloat("_heightPix", Screen.height);
+        //invwidth and invheight possibly not needed
+        BlurMaterial.SetFloat("_invWidth", invW);
+        BlurMaterial.SetFloat("_invHeight", invH);
+        BlurMaterial.SetFloat("_innerAngleMax", Mathf.Deg2Rad * innerAngle);
+        BlurMaterial.SetInt("_regionSize", regionSize);
+        BlurMaterial.SetFloat("_debugRegionBorderSize", Mathf.Deg2Rad * borderRegionSize);
+        //set flag
+        BlurMaterial.SetInteger("_flag", theFlag);
+
         /*
         int f = (int)DebugFlag | (int)FogType;
         if (EnableBackgoundFog)
@@ -235,6 +255,11 @@ public class SceneControl : MonoBehaviour
 
     public void RenderingImage(RenderTexture src, RenderTexture dst, Vector3 eyeLookVector, Vector3 trueLookVector, Vector3 frustumInformation, RenderTexture oldTex)
     {
+        if(middle == null)
+        {
+            middle = new RenderTexture(src);
+        }
+
         //give previous frame info
         FoveatedMat.SetTexture("_PreviousTex", oldTex);
         //set camera frustum info
@@ -250,8 +275,26 @@ public class SceneControl : MonoBehaviour
         FoveatedMat.SetFloat("_offscreenAngleRight", Mathf.Deg2Rad * rightOutsideAngle);
         FoveatedMat.SetFloat("_offscreenAngleDown", Mathf.Deg2Rad * downOutsideAngle);
         FoveatedMat.SetFloat("_offscreenAngleLeft", Mathf.Deg2Rad * leftOutsideAngle);
+
+        //give previous frame info
+        BlurMaterial.SetTexture("_PreviousTex", oldTex);
+        //set camera frustum info
+        BlurMaterial.SetVector("_frustumVector", new Vector4(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0));
+        //set the eye look vector as the used direction for the shader
+        BlurMaterial.SetVector("_viewVector", new Vector4(eyeLookVector.x, eyeLookVector.y, eyeLookVector.z, 0));
+        //set the actual look vector
+        BlurMaterial.SetVector("_trueViewVector", new Vector4(trueLookVector.x, trueLookVector.y, trueLookVector.z, 0));
+        //set calibration info
+        BlurMaterial.SetFloat("_offsetAngleX", angleOffsetX);//degrees
+        BlurMaterial.SetFloat("_offsetAngleY", angleOffsetY);//degrees
+        BlurMaterial.SetFloat("_offscreenAngleUp", Mathf.Deg2Rad * upOutsideAngle);
+        BlurMaterial.SetFloat("_offscreenAngleRight", Mathf.Deg2Rad * rightOutsideAngle);
+        BlurMaterial.SetFloat("_offscreenAngleDown", Mathf.Deg2Rad * downOutsideAngle);
+        BlurMaterial.SetFloat("_offscreenAngleLeft", Mathf.Deg2Rad * leftOutsideAngle);
+
         //simplifying this to one pass, just need to group far pixels based on foveation
-        Graphics.Blit(src, dst, FoveatedMat);
+        Graphics.Blit(src, middle, FoveatedMat);
+        Graphics.Blit(middle, dst, BlurMaterial);
         //function messes with active render texture, so make sure dst is called last
         captureRenderTexture(src, "src");
         captureRenderTexture(dst, "dst");
