@@ -50,6 +50,17 @@ float3 _AmbientLightUpper;
 // For VR eye difference
 bool _LeftEye;
 
+// Foveated Specific
+float4 _frustumVector; //frustum info (width, height, distance), a is unused
+float4 _viewVector; //vector of the gaze view (x, y, z), a is unused
+float _innerAngleMax; //area of foveal region
+bool _runNoFoveated; //tells the shader we're generating the lower res image for ray sharing
+bool _showTint; //should we tint based on region
+bool _showOverlay; //should we show the overlay
+static const float _overlaySize = 0.005f; //size of overlay in angle
+float _debugRegionBorderSize;
+RWTexture2D<float4> HalfRes; //half resolution texture for ray sharing
+
 // Placeholder
 float3 missShader(float3 direction) {
     // Sample the skybox and write it
@@ -89,8 +100,93 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // Get the dimensions of the RenderTexture
     uint width, height;
     Result.GetDimensions(width, height);
+    if(_runNoFoveated){
+        //divide width and height by 2, because we're rendering to the half res Texture
+        width = width / 2;
+        height = height / 2;
+    }
+
+    //calculate offset
+    //currently static numbers for the VR cameras
+    float FOV = 90;
+    //float FOVRad = 1.5708;
+    float xOffset = 11;
+    if(_LeftEye){
+        xOffset = -11;
+    }
+    float yOffset = 10;
+
+    int2 finalXY = {id.x + ((width * xOffset) / FOV), id.y + ((height * yOffset) / FOV)};
+
+    //wrap around if the offset places us outside the array bounds
+    if(finalXY.x < 0){
+        finalXY.x += width;
+    }
+    if(finalXY.x >= width){
+        finalXY.x -= width;
+    }
+    if(finalXY.y < 0){
+        finalXY.y += height;
+    }
+    if(finalXY.y >= height){
+        finalXY.y += height;
+    } 
+
+    //get relative screen location (-0.5 through 0.5) for angle calculations
+    float widthF = width;
+    float screenXF = id.x;
+    float heightF = height;
+    float screenYF = id.y;
+    float relativeScreenX = (screenXF/widthF) - 0.5;
+    float relativeScreenY = (screenYF/heightF) - 0.5;
+
+    //check the angle distance from the look direction
+    //angle = arccos(a.b / magA + magB)
+    //A is the vector to this pixel
+    //x = (texX - 0.5) * width, y = (texY - 0.5) * height, z = given distance
+    float3 vecA = {(relativeScreenX) * _frustumVector.x, (relativeScreenY) * _frustumVector.y, _frustumVector.z};
+    //B is the direction vector of the gaze
+                
+    float dot = (vecA.x * _viewVector.x) + (vecA.y * _viewVector.y) + (vecA.z * _viewVector.z);
+    float magA = sqrt((vecA.x * vecA.x) + (vecA.y * vecA.y) + (vecA.z * vecA.z));
+    float magB = sqrt((_viewVector.x * _viewVector.x) + (_viewVector.y * _viewVector.y) + (_viewVector.z * _viewVector.z));
+    float angle = acos((dot / (magA * magB)));
+
+    if((angle < (_innerAngleMax - 0.005f) || angle > ((_innerAngleMax * 3) + 0.005f)) && _runNoFoveated){ //add small bump to avoid edge cases
+        HalfRes[finalXY] = float4(1,0,1,1); //don't render here because there will be no pulling from here
+        return;
+    }
+
+    if(!_runNoFoveated && _showOverlay && angle <= _overlaySize){
+        //just render pink to show center of user gaze
+        Result[finalXY] = float4(1,0,1,1);
+        return;
+    }
+
+    //can be used to debug if we're in the angle, tints are better though
+    //if(angle > _innerAngleMax){
+    //    Result[finalXY] = float4(1,0,0,1);
+    //    return;
+    //}
 
     uint numberOfRay = NumberOfRay(width, height, id, _RayGenID);
+    if(_runNoFoveated){
+        numberOfRay = 1; //only have one ray
+    }
+    else{
+        if(angle > _innerAngleMax){
+            numberOfRay = 1; //only have one ray outside of the inner radius
+        }
+        if(angle > (_innerAngleMax * 2)){
+            //only use low res (don't shoot rays)
+            numberOfRay = 0;
+        }
+        if(angle > (_innerAngleMax * 3)){
+            //outside viewable area (don't render)
+            Result[finalXY] = float4(0,0,0,1);
+            return;
+        }
+    }
 
     float4 finalColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -120,7 +216,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             
             int srLevel = -1;
             float3 secRayCombinedColor = float3(0, 0, 0);
-            
+            /*
             // TODO: Refactor this to avoid special case for primary ray
             SecRaysAtHit secRaysAtHit = CreateSecRaysAtHit();   // TODO: Optimization: Avoid initialize the internal Ray array
             SecRays(ray, hit, secRaysAtHit);
@@ -130,7 +226,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             {
                 srLevel = srLevel + 1;
                 srSbilingAtEachLevel[0] = 0;
-                for (int j = 0; j < MAX_RAY_PER_LEVEL; j++) 
+                [fastopt] for (int j = 0; j < MAX_RAY_PER_LEVEL; j++) //fastopt added for faster compilation
                 {
                     _secondaryRayStack[srLevel * MAX_RAY_PER_LEVEL + j] = secRaysAtHit.srays[j];  // Copy to secondary rays stack
                 }
@@ -156,7 +252,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                                 {
                                     SecRaysAtHit _hit = CreateSecRaysAtHit();   // TODO: Optimization: Avoid initialize the internal Ray array
                                     SecRays(_secondaryRayStack[secRayIndex], secHit, _hit);
-                                    for (int i = 0; i < MAX_RAY_PER_LEVEL; i++) 
+                                    [fastopt] for (int i = 0; i < MAX_RAY_PER_LEVEL; i++) //fastopt added for faster compilation
                                     {
                                         _secondaryRayStack[childRayOffset(srLevel) + i] = _hit.srays[i];  // Copy to secondary rays stack
                                     }
@@ -170,7 +266,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                                 // Back from children. Calculate the ray color from children rays
                                 srSbilingAtEachLevel[srLevel + 1] = -1;
                                 float3 children = float3(0, 0, 0);
-                                for (int c = 0; c < MAX_RAY_PER_LEVEL; c++) 
+                                [fastopt] for (int c = 0; c < MAX_RAY_PER_LEVEL; c++) //fastopt added for faster compilation
                                 {
                                     children = children + _secondaryRayStack[childRayOffset(srLevel) + c].color * _secondaryRayStack[childRayOffset(srLevel) + c].weight;
                                 }
@@ -217,11 +313,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 }
                 srSbilingAtEachLevel[0] = -1;
 
-                for (int c = 0; c < MAX_RAY_PER_LEVEL; c++) 
+                [fastopt]for (int c = 0; c < MAX_RAY_PER_LEVEL; c++) //fastopt added for faster compilation
                 {
                     secRayCombinedColor = secRayCombinedColor + _secondaryRayStack[c].color * _secondaryRayStack[c].weight;
                 }
-            }
+            }*/ //attempting removal of secondary rays
 
             // Closet Hit Shader
             result = ClosestHit(
@@ -232,37 +328,48 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             );
         }
             
-        finalColor += float4(result, 1) / numberOfRay;
+        if(_runNoFoveated){
+            finalColor += float4(result, 1) / numberOfRay; //just use raw ray color
+        }
+        else{
+            if(angle <= _innerAngleMax){
+                finalColor += float4(result, 1) / numberOfRay; //just use raw ray color
+            }
+            else{
+                finalColor += float4(result, 1) / (numberOfRay + 1); //numberOfRay + 1 because we will be adding the color of the half res ray
+            }
+        }
+    }
+    //add shared Ray
+    if(!_runNoFoveated){
+        if(angle > _innerAngleMax){
+            finalColor += HalfRes[finalXY/2] / (numberOfRay + 1);
+        }
+        //finalColor = HalfRes[finalXY/2]; //copy over half res for debug
+        //also add tint if needed
+        if(_showTint){
+            if(abs(angle - _innerAngleMax) <= _debugRegionBorderSize){
+                finalColor += float4(0,0.1f,0,0); //green border
+            }
+            else{
+                if(angle <= _innerAngleMax){
+                    finalColor += float4(0,0,0.1f,0); //blue inside
+                }
+                if(angle > _innerAngleMax && angle <= _innerAngleMax * 2){
+                    finalColor += float4(0.1f,0,0,0); //red outside
+                }
+                if(angle > (_innerAngleMax * 2)){
+                    finalColor += float4(0.1f,0.1f,0,0); //yellow in far region
+                }
+            }
+        }
     }
 
-    //currently static numbers for the VR cameras
-    int texWidth = 2160;
-    int texHeight = 2224;
-    int FOV = 90;
-    int xOffset = 11;
-    if(_LeftEye){
-        xOffset = -11;
+    if(_runNoFoveated){
+        //render to the half texture
+        HalfRes[finalXY] = finalColor;
     }
-    int yOffset = 10;
-
-    int2 finalXY = {id.x + ((texWidth * xOffset) / FOV), id.y + ((texHeight * yOffset) / FOV)};
-
-    //wrap around if the offset places us outside the array bounds
-    if(finalXY.x < 0){
-        finalXY.x += texWidth;
-    }
-    if(finalXY.x >= texWidth){
-        finalXY.x -= texWidth;
-    }
-    if(finalXY.y < 0){
-        finalXY.y += texHeight;
-    }
-    if(finalXY.y >= texHeight){
-        finalXY.y += texHeight;
-    } 
-    //int finalX = (texWidth * xOffset) / FOV;
-    //int finalY = (texHeight * yOffset) / FOV;
-    //test change to force recompile?
+    //test change to force recompile.....
     Result[finalXY] = finalColor;
     //Result[id.xy] = finalColor;
     
