@@ -54,7 +54,9 @@ bool _LeftEye;
 float4 _frustumVector; //frustum info (width, height, distance), a is unused
 float4 _viewVector; //vector of the gaze view (x, y, z), a is unused
 float _innerAngleMax; //area of foveal region
-bool _runNoFoveated; //tells the shader we're generating the lower res image for ray sharing
+bool _runHalfRes; //tells the shader we're generating the lower res image for ray sharing
+bool _runNoFoveated; //tells the shader to make the frame without using foveated rendering
+bool _onlyOneSample; //tells the shader to ignore the number of samples to use
 bool _showTint; //should we tint based on region
 bool _showOverlay; //should we show the overlay
 static const float _overlaySize = 0.005f; //size of overlay in angle
@@ -100,7 +102,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // Get the dimensions of the RenderTexture
     uint width, height;
     Result.GetDimensions(width, height);
-    if(_runNoFoveated){
+    if(_runHalfRes){
         //divide width and height by 2, because we're rendering to the half res Texture
         width = width / 2;
         height = height / 2;
@@ -152,12 +154,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float magB = sqrt((_viewVector.x * _viewVector.x) + (_viewVector.y * _viewVector.y) + (_viewVector.z * _viewVector.z));
     float angle = acos((dot / (magA * magB)));
 
-    if((angle < (_innerAngleMax - 0.005f) || angle > ((_innerAngleMax * 3) + 0.005f)) && _runNoFoveated){ //add small bump to avoid edge cases
+    if((angle < (_innerAngleMax - 0.005f) || angle > ((_innerAngleMax * 3) + 0.005f)) && _runHalfRes){ //add small bump to avoid edge cases
         HalfRes[finalXY] = float4(1,0,1,1); //don't render here because there will be no pulling from here
         return;
     }
 
-    if(!_runNoFoveated && _showOverlay && angle <= _overlaySize){
+    if(!_runHalfRes && _showOverlay && angle <= _overlaySize){
         //just render pink to show center of user gaze
         Result[finalXY] = float4(1,0,1,1);
         return;
@@ -170,21 +172,26 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     //}
 
     uint numberOfRay = NumberOfRay(width, height, id, _RayGenID);
-    if(_runNoFoveated){
-        numberOfRay = 1; //only have one ray
+    if(_onlyOneSample){
+        numberOfRay = 1;//only have one ray
     }
-    else{
-        if(angle > _innerAngleMax){
-            numberOfRay = 1; //only have one ray outside of the inner radius
+    if(!_runNoFoveated){
+        if(_runHalfRes){
+            numberOfRay = 1; //only have one ray
         }
-        if(angle > (_innerAngleMax * 2)){
-            //only use low res (don't shoot rays)
-            numberOfRay = 0;
-        }
-        if(angle > (_innerAngleMax * 3)){
-            //outside viewable area (don't render)
-            Result[finalXY] = float4(0,0,0,1);
-            return;
+        else{
+            if(angle > _innerAngleMax){
+                numberOfRay = 1; //only have one ray outside of the inner radius
+            }
+            if(angle > (_innerAngleMax * 2)){
+                //only use low res (don't shoot rays)
+                numberOfRay = 0;
+            }
+            if(angle > (_innerAngleMax * 3)){
+                //outside viewable area (don't render)
+                Result[finalXY] = float4(0,0,0,1);
+                return;
+            }
         }
     }
 
@@ -327,21 +334,26 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 secRayCombinedColor
             );
         }
-            
+        
         if(_runNoFoveated){
             finalColor += float4(result, 1) / numberOfRay; //just use raw ray color
         }
         else{
-            if(angle <= _innerAngleMax){
+            if(_runHalfRes){
                 finalColor += float4(result, 1) / numberOfRay; //just use raw ray color
             }
             else{
-                finalColor += float4(result, 1) / (numberOfRay + 1); //numberOfRay + 1 because we will be adding the color of the half res ray
+                if(angle <= _innerAngleMax){
+                    finalColor += float4(result, 1) / numberOfRay; //just use raw ray color
+                 }
+                else{
+                    finalColor += float4(result, 1) / (numberOfRay + 1); //numberOfRay + 1 because we will be adding the color of the half res ray
+                }
             }
         }
     }
     //add shared Ray
-    if(!_runNoFoveated){
+    if(!_runHalfRes && !_runNoFoveated){
         if(angle > _innerAngleMax){
             finalColor += HalfRes[finalXY/2] / (numberOfRay + 1);
         }
@@ -365,7 +377,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
     }
 
-    if(_runNoFoveated){
+    if(_runHalfRes){
         //render to the half texture
         HalfRes[finalXY] = finalColor;
     }

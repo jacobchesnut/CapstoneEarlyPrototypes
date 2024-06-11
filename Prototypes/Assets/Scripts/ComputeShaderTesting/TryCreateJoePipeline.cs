@@ -18,13 +18,18 @@ public class TryCreateJoePipeline : MonoBehaviour
     //for creating the pipeline
     public List<RenderPipelineConfigObject> m_config;
     public Color clearColor = Color.green;
-    public ComputeShader mainShader;
+    public ComputeShader mainShader; //set in editor
 
     public RenderTexture[] textureToRenderTo; //will eventually need array
     public Camera[] camerasToRenderTo;
 
     private BasicPipeInstance joePipeInstance = null;
     public bool onlyOnce = true;
+
+    //vars for creating diffs
+    public RenderTexture[] pastTextureToRenderTo;
+    public RenderTexture differenceTexture;
+    public ComputeShader differenceShader; //set in editor
 
     //paramaters to set in editor
     public float innerAngleMax = 15f; //foveated region
@@ -37,11 +42,21 @@ public class TryCreateJoePipeline : MonoBehaviour
     {
         joePipeInstance = new BasicPipeInstance(clearColor, mainShader, m_config);
         textureToRenderTo = new RenderTexture[camerasToRenderTo.Length];
-        for(int i = 0; i < camerasToRenderTo.Length; i++)
+        pastTextureToRenderTo = new RenderTexture[camerasToRenderTo.Length];
+        for (int i = 0; i < camerasToRenderTo.Length; i++)
         {
             //textureToRenderTo[i] = new RenderTexture(camerasToRenderTo[i].scaledPixelWidth, camerasToRenderTo[i].scaledPixelHeight, 0);
-            textureToRenderTo[i] = new RenderTexture(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, 0); //hard coded to vr dimensions because of oddities with camera pixel width and heigh
+            textureToRenderTo[i] = new RenderTexture(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, 0); //hard coded to vr dimensions because of oddities with camera pixel width and height
+            textureToRenderTo[i].enableRandomWrite = true;
+            pastTextureToRenderTo[i] = new RenderTexture(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, 0);
+            pastTextureToRenderTo[i].enableRandomWrite = true;
         }
+
+        differenceTexture = new RenderTexture(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, 0);
+        differenceTexture.enableRandomWrite = true;
+        differenceTexture.Create();
+
+        differenceShader.SetTexture(0, "Result", differenceTexture);
         //textureToRenderTo = new RenderTexture(Screen.width, Screen.height, 0); //currently screen width and height, will need pixel counts for VR camera
     }
 
@@ -114,9 +129,21 @@ public class TryCreateJoePipeline : MonoBehaviour
         infoToSend._showOverlay = showOverlay;
         infoToSend._debugRegionBorderSize = Mathf.Deg2Rad * tintBorderSize;
 
-        joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend);
+        //blit out old render textures for differences
+        for(int i = 0; i < textureToRenderTo.Length; i++)
+        {
+            Graphics.Blit(textureToRenderTo[i], pastTextureToRenderTo[i]);
+        }
+
+        //long startTime = DateTime.Now.ToFileTime();
+        joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, false, false);
+        //long endTime = DateTime.Now.ToFileTime();
+        float timeSpent = Time.deltaTime;
+        //Debug.Log("Time for frame generation: " + (endTime - startTime));
+        Debug.Log("Time spent: " + timeSpent);
+
         //if (Input.GetKeyDown(KeyCode.P)) << has to be done in update
-        if(onlyOnce)
+        if (onlyOnce)
         {
             onlyOnce = false;
             //Debug.Log("in printout");
@@ -126,12 +153,88 @@ public class TryCreateJoePipeline : MonoBehaviour
             temp.Apply();
             File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCam" + ".png", temp.EncodeToPNG());
 
+            temp = new Texture2D(pastTextureToRenderTo[0].width, pastTextureToRenderTo[0].height);//format and other seem to be set correctly by default
+            RenderTexture.active = pastTextureToRenderTo[0];
+            temp.ReadPixels(new Rect(0, 0, pastTextureToRenderTo[0].width, pastTextureToRenderTo[0].height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamOld" + ".png", temp.EncodeToPNG());
+
+            createDifference(textureToRenderTo[0], pastTextureToRenderTo[0]);
+
+            temp = new Texture2D(differenceTexture.width, differenceTexture.height);//format and other seem to be set correctly by default
+            RenderTexture.active = differenceTexture;
+            temp.ReadPixels(new Rect(0, 0, differenceTexture.width, differenceTexture.height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamDiff" + ".png", temp.EncodeToPNG());
+
             temp = new Texture2D(textureToRenderTo[1].width, textureToRenderTo[1].height);//format and other seem to be set correctly by default
             RenderTexture.active = textureToRenderTo[1];
             temp.ReadPixels(new Rect(0, 0, textureToRenderTo[1].width, textureToRenderTo[1].height), 0, 0);
             temp.Apply();
             File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingRightCam" + ".png", temp.EncodeToPNG());
+
+            temp = new Texture2D(pastTextureToRenderTo[1].width, pastTextureToRenderTo[1].height);//format and other seem to be set correctly by default
+            RenderTexture.active = pastTextureToRenderTo[1];
+            temp.ReadPixels(new Rect(0, 0, pastTextureToRenderTo[1].width, pastTextureToRenderTo[1].height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamOld" + ".png", temp.EncodeToPNG());
+
+            createDifference(textureToRenderTo[1], pastTextureToRenderTo[1]);
+
+            temp = new Texture2D(differenceTexture.width, differenceTexture.height);//format and other seem to be set correctly by default
+            RenderTexture.active = differenceTexture;
+            temp.ReadPixels(new Rect(0, 0, differenceTexture.width, differenceTexture.height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamDiff" + ".png", temp.EncodeToPNG());
+
+            //now create ideal and "ok" diffs to print out
+            joePipeInstance.Render(contextToUse, camerasToRenderTo, pastTextureToRenderTo, onlyOnce, infoToSend, true, false);
+
+            createDifference(textureToRenderTo[0], pastTextureToRenderTo[0]);
+
+            temp = new Texture2D(differenceTexture.width, differenceTexture.height);//format and other seem to be set correctly by default
+            RenderTexture.active = differenceTexture;
+            temp.ReadPixels(new Rect(0, 0, differenceTexture.width, differenceTexture.height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamIdealDiff" + ".png", temp.EncodeToPNG());
+
+            createDifference(textureToRenderTo[1], pastTextureToRenderTo[1]);
+
+            temp = new Texture2D(differenceTexture.width, differenceTexture.height);//format and other seem to be set correctly by default
+            RenderTexture.active = differenceTexture;
+            temp.ReadPixels(new Rect(0, 0, differenceTexture.width, differenceTexture.height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingRightCamIdealDiff" + ".png", temp.EncodeToPNG());
+
+            joePipeInstance.Render(contextToUse, camerasToRenderTo, pastTextureToRenderTo, onlyOnce, infoToSend, true, true);
+
+            createDifference(textureToRenderTo[0], pastTextureToRenderTo[0]);
+
+            temp = new Texture2D(differenceTexture.width, differenceTexture.height);//format and other seem to be set correctly by default
+            RenderTexture.active = differenceTexture;
+            temp.ReadPixels(new Rect(0, 0, differenceTexture.width, differenceTexture.height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamOKDiff" + ".png", temp.EncodeToPNG());
+
+            createDifference(textureToRenderTo[1], pastTextureToRenderTo[1]);
+
+            temp = new Texture2D(differenceTexture.width, differenceTexture.height);//format and other seem to be set correctly by default
+            RenderTexture.active = differenceTexture;
+            temp.ReadPixels(new Rect(0, 0, differenceTexture.width, differenceTexture.height), 0, 0);
+            temp.Apply();
+            File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingRightCamOKDiff" + ".png", temp.EncodeToPNG());
         }
+    }
+
+    private void createDifference(RenderTexture baseTexture, RenderTexture minusTexture)
+    {
+        differenceShader.SetTexture(0, "Base", baseTexture);
+        differenceShader.SetTexture(0, "Minus", minusTexture);
+
+        int threadGroupsX = Mathf.CeilToInt(differenceTexture.width / 8.0f);
+        int threadGroupsY = Mathf.CeilToInt(differenceTexture.height / 8.0f);
+
+        differenceShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
     }
 }
 

@@ -1,0 +1,16 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+RWTexture2D<float4> Base;
+RWTexture2D<float4> Minus;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    //very basic, create a difference frame from the base render texture minus the Minus render texture
+    
+    Result[id.xy] = float4(Base[id.xy].x - Minus[id.xy].x, Base[id.xy].y - Minus[id.xy].y, Base[id.xy].z - Minus[id.xy].z, 1.0f);
+}

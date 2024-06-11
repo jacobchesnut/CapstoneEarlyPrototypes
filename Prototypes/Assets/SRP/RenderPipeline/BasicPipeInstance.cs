@@ -95,9 +95,14 @@ namespace OpenRT
         }
 
         //removed override to make public
-        public void Render(ScriptableRenderContext renderContext, Camera[] cameras, RenderTexture[] texToWriteTo, bool pPressed, ShaderFoveatedInfo foveatedInfo) // This is the function called every frame to draw on the screen
+        public void Render(ScriptableRenderContext renderContext, Camera[] cameras, RenderTexture[] texToWriteTo, bool pPressed, ShaderFoveatedInfo foveatedInfo, bool runNoFoveation, bool runOnlyOneSample) // This is the function called every frame to draw on the screen
         {
             onlyOnce = pPressed;
+            m_mainShader.SetBool("_runNoFoveated", runNoFoveation);
+            m_mainShader.SetBool("_onlyOneSample", runOnlyOneSample);
+            
+
+
             if (m_mainShader == null)
             {
                 return;
@@ -481,14 +486,14 @@ namespace OpenRT
         private void RunSendTextureToUnity(CommandBuffer commands, RenderTexture targeTexture,
             ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo)
         {
-            m_mainShader.SetBool("_runNoFoveated", true); //need to run shared rays first
+            m_mainShader.SetBool("_runHalfRes", true); //need to run shared rays first
             int threadGroupsX = Mathf.CeilToInt(m_half.width / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(m_half.height / 8.0f);
             //run once, this will create the half-res shared texture which is kept internally
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
             //now we can run foveated raytracer
-            m_mainShader.SetBool("_runNoFoveated", false); //need to run shared rays first
+            m_mainShader.SetBool("_runHalfRes", false); //need to run shared rays first
 
             //directly dispatch compute shader and blit to outside texture
             threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
