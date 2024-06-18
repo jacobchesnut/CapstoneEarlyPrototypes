@@ -58,7 +58,10 @@ namespace OpenRT
 
         private Color m_clearColor = Color.black;
         private RenderTexture m_target;
-        private RenderTexture m_half;
+        private RenderTexture m_lowResTextures;
+        //private RenderTexture m_half;
+        //private RenderTexture m_quarter;
+        //private RenderTexture m_eighth;
 
         private ComputeShader m_mainShader;
         private CommandBuffer commands;
@@ -142,10 +145,10 @@ namespace OpenRT
             int i = 0; //iterator for going through each camera's render texture copy here
             foreach (var camera in cameras)
             {
-                RunTargetTextureInit(ref m_target,ref m_half, camera);
+                RunTargetTextureInit(ref m_target,ref m_lowResTextures, camera);
                 RunClearCanvas(commands, camera);
                 RunSetCameraToMainShader(camera, i);
-                RunRayTracing(ref commands, m_target, m_half);
+                RunRayTracing(ref commands, m_target, m_lowResTextures);
                 RunSetFoveatedVariables(foveatedInfo, i);
                 RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i]);
                 i++;
@@ -162,7 +165,7 @@ namespace OpenRT
         {
             m_mainShader.SetVector("_frustumVector", foveatedInfo._frustumVector[camNumber]);
             m_mainShader.SetVector("_viewVector", foveatedInfo._viewVector[camNumber]);
-            m_mainShader.SetFloat("_innerAngleMax", Mathf.Deg2Rad * foveatedInfo._innerAngleMax);
+            //m_mainShader.SetFloat("_innerAngleMax", Mathf.Deg2Rad * foveatedInfo._innerAngleMax);
             m_mainShader.SetBool("_showTint", foveatedInfo._showTint);
             m_mainShader.SetBool("_showOverlay", foveatedInfo._showOverlay);
             m_mainShader.SetFloat("_debugRegionBorderSize", foveatedInfo._debugRegionBorderSize);
@@ -196,7 +199,7 @@ namespace OpenRT
             shader.SetBuffer(kIndex, "_secondaryRayStack", secondaryRayBuffer);
         }
 
-        private void RunTargetTextureInit(ref RenderTexture targetTexture, ref RenderTexture halfTexture, Camera sampleCam)
+        private void RunTargetTextureInit(ref RenderTexture targetTexture, ref RenderTexture lowResTextures, Camera sampleCam)
         {
             //if (targetTexture == null || targetTexture.width != sampleCam.scaledPixelWidth || targetTexture.height != sampleCam.scaledPixelHeight)
             if (targetTexture == null || targetTexture.width != TryCreateJoePipeline.RENDER_TEXTURE_WIDTH || targetTexture.height != TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT)
@@ -217,7 +220,27 @@ namespace OpenRT
                 //targetTexture = new RenderTexture(UnityEngine.XR.XRSettings.eyeTextureDesc);
                 targetTexture.enableRandomWrite = true;
                 targetTexture.Create();
+
+                //recreate low res texture array as well
+                if(lowResTextures != null)
+                {
+                    lowResTextures.Release();
+                }
+
+                //lowResTextures = new Texture2DArray(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT, 3, TextureFormat.RGBA32, 1, false);
+                lowResTextures = new RenderTexture(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT, 32, 
+                    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+                lowResTextures.enableRandomWrite = true;
+                lowResTextures.volumeDepth = 3;
+                lowResTextures.dimension = TextureDimension.Tex2DArray;
+                lowResTextures.Create();
+
             }
+
+            
+            
+
+            /*
             //now create at half resolution for ray sharing
             if (halfTexture == null || halfTexture.width != TryCreateJoePipeline.RENDER_TEXTURE_WIDTH/2 || halfTexture.height != TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT/2)
             {
@@ -236,6 +259,45 @@ namespace OpenRT
                 halfTexture.enableRandomWrite = true;
                 halfTexture.Create();
             }
+
+            //now create at quarter resolution for ray sharing
+            if (quarterTexture == null || quarterTexture.width != TryCreateJoePipeline.RENDER_TEXTURE_WIDTH / 4 || quarterTexture.height != TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT / 4)
+            {
+                // Release render texture if we already have one
+                if (quarterTexture != null)
+                {
+                    quarterTexture.Release();
+                }
+
+                // Get a render target for Ray Sharing
+
+                quarterTexture = new RenderTexture(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH / 4, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT / 4, 0,
+                    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+
+                //targetTexture = new RenderTexture(UnityEngine.XR.XRSettings.eyeTextureDesc);
+                quarterTexture.enableRandomWrite = true;
+                quarterTexture.Create();
+            }
+
+            //now create at eighth resolution for ray sharing
+            if (eighthTexture == null || eighthTexture.width != TryCreateJoePipeline.RENDER_TEXTURE_WIDTH / 8 || eighthTexture.height != TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT / 8)
+            {
+                // Release render texture if we already have one
+                if (eighthTexture != null)
+                {
+                    eighthTexture.Release();
+                }
+
+                // Get a render target for Ray Sharing
+
+                eighthTexture = new RenderTexture(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH / 8, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT / 8, 0,
+                    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+
+                //targetTexture = new RenderTexture(UnityEngine.XR.XRSettings.eyeTextureDesc);
+                eighthTexture.enableRandomWrite = true;
+                eighthTexture.Create();
+            }
+            */
         }
 
         private void RunClearCanvas(CommandBuffer buffer, Camera camera)
@@ -431,10 +493,10 @@ namespace OpenRT
             m_mainShader.SetBuffer(kIndex, "_Lights", lightInfoBuffer);
         }
 
-        private void RunRayTracing(ref CommandBuffer commands, RenderTexture targetTexture, RenderTexture halfTexture)
+        private void RunRayTracing(ref CommandBuffer commands, RenderTexture targetTexture, RenderTexture lowResTextures)
         {
             m_mainShader.SetTexture(kIndex, "Result", targetTexture);
-            m_mainShader.SetTexture(kIndex, "HalfRes", halfTexture);
+            m_mainShader.SetTexture(kIndex, "_LowResTexture", lowResTextures);
             int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
 
@@ -486,14 +548,25 @@ namespace OpenRT
         private void RunSendTextureToUnity(CommandBuffer commands, RenderTexture targeTexture,
             ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo)
         {
-            m_mainShader.SetBool("_runHalfRes", true); //need to run shared rays first
-            int threadGroupsX = Mathf.CeilToInt(m_half.width / 8.0f);
-            int threadGroupsY = Mathf.CeilToInt(m_half.height / 8.0f);
+            m_mainShader.SetInt("_runRes", 1); //need to run shared rays first
+            int threadGroupsX = Mathf.CeilToInt(m_target.width / 16.0f);
+            int threadGroupsY = Mathf.CeilToInt(m_target.height / 16.0f);
             //run once, this will create the half-res shared texture which is kept internally
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
+            threadGroupsX = Mathf.CeilToInt(m_target.width / 32.0f);
+            threadGroupsY = Mathf.CeilToInt(m_target.height / 32.0f);
+            m_mainShader.SetInt("_runRes", 2); //need to run shared rays first
+            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+
+            threadGroupsX = Mathf.CeilToInt(m_target.width / 64.0f);
+            threadGroupsY = Mathf.CeilToInt(m_target.height / 64.0f);
+            m_mainShader.SetInt("_runRes", 3); //need to run shared rays first
+            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+
+
             //now we can run foveated raytracer
-            m_mainShader.SetBool("_runHalfRes", false); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 0); //now run full res
 
             //directly dispatch compute shader and blit to outside texture
             threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);

@@ -10,9 +10,9 @@ public class TryCreateJoePipeline : MonoBehaviour
 {
     //consts for global use
     //default width meta uses = 2160
-    public static int RENDER_TEXTURE_WIDTH = 1080;
+    public static int RENDER_TEXTURE_WIDTH = 2160;
     //default height meta uses = 2224
-    public static int RENDER_TEXTURE_HEIGHT = 1112;
+    public static int RENDER_TEXTURE_HEIGHT = 2224;
 
 
     //for creating the pipeline
