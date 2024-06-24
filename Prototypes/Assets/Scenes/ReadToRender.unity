@@ -1082,6 +1082,8 @@ MonoBehaviour:
   showTint: 1
   showOverlay: 1
   tintBorderSize: 1
+  MaxTAAFrame: 3
+  TAAWeightFactor: 0.2
 --- !u!20 &455045220
 Camera:
   m_ObjectHideFlags: 0

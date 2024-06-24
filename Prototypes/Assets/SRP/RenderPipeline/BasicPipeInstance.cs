@@ -59,6 +59,11 @@ namespace OpenRT
         private Color m_clearColor = Color.black;
         private RenderTexture m_target;
         private RenderTexture m_lowResTextures;
+        //variables for TAA
+        private RenderTexture[] m_TAATextures;
+        private int m_CurrentTAAFrame = 0;
+        private int m_MaxTAAFrame = 3;
+        private float m_TAAWeightFactor = 0.9f;
         //private RenderTexture m_half;
         //private RenderTexture m_quarter;
         //private RenderTexture m_eighth;
@@ -95,6 +100,16 @@ namespace OpenRT
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
         {
             return; //here to satisfy abstract class
+        }
+
+        public void setMaxTAAFrames(int frames)
+        {
+            m_MaxTAAFrame = frames;
+        }
+
+        public void setTAAWeight(float weight)
+        {
+            m_TAAWeightFactor = weight;
         }
 
         //removed override to make public
@@ -145,13 +160,19 @@ namespace OpenRT
             int i = 0; //iterator for going through each camera's render texture copy here
             foreach (var camera in cameras)
             {
-                RunTargetTextureInit(ref m_target,ref m_lowResTextures, camera);
+                RunTargetTextureInit(ref m_target,ref m_lowResTextures, ref m_TAATextures, camera);
                 RunClearCanvas(commands, camera);
                 RunSetCameraToMainShader(camera, i);
                 RunRayTracing(ref commands, m_target, m_lowResTextures);
                 RunSetFoveatedVariables(foveatedInfo, i);
                 RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i]);
                 i++;
+            }
+
+            m_CurrentTAAFrame++;
+            if(m_CurrentTAAFrame >= m_MaxTAAFrame)
+            {
+                m_CurrentTAAFrame = 0;
             }
 
             //render to VR headset
@@ -169,6 +190,19 @@ namespace OpenRT
             m_mainShader.SetBool("_showTint", foveatedInfo._showTint);
             m_mainShader.SetBool("_showOverlay", foveatedInfo._showOverlay);
             m_mainShader.SetFloat("_debugRegionBorderSize", foveatedInfo._debugRegionBorderSize);
+            m_mainShader.SetFloat("_weightDecreaseFactor", m_TAAWeightFactor);
+            m_mainShader.SetInt("_totalNoTAAFrames", m_MaxTAAFrame);
+            m_mainShader.SetInt("_temporalFramePosition", m_CurrentTAAFrame);
+
+            if(camNumber == 0)
+            {
+                m_mainShader.SetTexture(0, "_PastTexture", m_TAATextures[0]);
+            }
+            else
+            {
+                m_mainShader.SetTexture(0, "_PastTexture", m_TAATextures[1]);
+            }
+
         }
 
         private void RunLoadMaterialToBuffer(List<ComputeBuffer> computeShadersForMaterials,
@@ -199,7 +233,7 @@ namespace OpenRT
             shader.SetBuffer(kIndex, "_secondaryRayStack", secondaryRayBuffer);
         }
 
-        private void RunTargetTextureInit(ref RenderTexture targetTexture, ref RenderTexture lowResTextures, Camera sampleCam)
+        private void RunTargetTextureInit(ref RenderTexture targetTexture, ref RenderTexture lowResTextures, ref RenderTexture[] TAATextures, Camera sampleCam)
         {
             //if (targetTexture == null || targetTexture.width != sampleCam.scaledPixelWidth || targetTexture.height != sampleCam.scaledPixelHeight)
             if (targetTexture == null || targetTexture.width != TryCreateJoePipeline.RENDER_TEXTURE_WIDTH || targetTexture.height != TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT)
@@ -235,6 +269,27 @@ namespace OpenRT
                 lowResTextures.dimension = TextureDimension.Tex2DArray;
                 lowResTextures.Create();
 
+            }
+            if(TAATextures == null || TAATextures[0].volumeDepth != m_MaxTAAFrame)
+            {
+                if(TAATextures != null)
+                {
+                    for(int i = 0; i < TAATextures.Length; i++)
+                    {
+                        TAATextures[i].Release();
+                    }
+                }
+
+                TAATextures = new RenderTexture[2]; //just left and right eye
+                for(int i = 0; i < 2; i++)
+                {
+                    TAATextures[i] = new RenderTexture(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT, 32,
+                    RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+                    TAATextures[i].enableRandomWrite = true;
+                    TAATextures[i].volumeDepth = m_MaxTAAFrame;
+                    TAATextures[i].dimension = TextureDimension.Tex2DArray;
+                    TAATextures[i].Create();
+                }
             }
 
             

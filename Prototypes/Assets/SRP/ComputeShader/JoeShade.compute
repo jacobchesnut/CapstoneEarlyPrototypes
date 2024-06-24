@@ -67,6 +67,10 @@ bool _showOverlay; //should we show the overlay
 static const float _overlaySize = 0.005f; //size of overlay in angle
 float _debugRegionBorderSize;
 RWTexture2DArray<float4> _LowResTexture;
+int _temporalFramePosition; //which frame to write to for TAA
+int _totalNoTAAFrames; //the total number of TAA frames being used
+float _weightDecreaseFactor; //rate at which weight of previous frames decreases
+RWTexture2DArray<float4> _PastTexture; //past frame data for TAA
 //RWTexture2D<float4> HalfRes; //half resolution texture for ray sharing
 //RWTexture2D<float4> QuarterRes; //quarter resolution texture for ray sharing
 //RWTexture2D<float4> EighthRes; //eighth resolution texture for ray sharing
@@ -178,6 +182,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float magB = sqrt((_viewVector.x * _viewVector.x) + (_viewVector.y * _viewVector.y) + (_viewVector.z * _viewVector.z));
     float angle = acos((dot / (magA * magB)));
 
+    //now calculate angle from center
+    //dot = vecA.z;
+    //magB = 1
+    float angleFromCenter = acos(vecA.z/magA);
+
 
     if((angle < (_innerAngleMax - 0.005f) || angle > (_secondAngleMax + 0.005f)) && (_runRes == 1)){ //add small bump to avoid edge cases
         _LowResTexture[int3(finalXY.x, finalXY.y, 0)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
@@ -221,6 +230,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 numberOfRay = 0;
             }
             if(angle > _thirdAngleMax){
+                //outside viewable area (don't render)
+                //actually, for now render as it may be better to adapt to center of display.
+                //Result[finalXY] = float4(0,0,0,1);
+                //return;
+            }
+            if(angleFromCenter > 0.785f){ //45 degrees from center
                 //outside viewable area (don't render)
                 Result[finalXY] = float4(0,0,0,1);
                 return;
@@ -393,6 +408,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         if(angle >= _secondAngleMax && angle < _thirdAngleMax){
             finalColor += _LowResTexture[int3(finalXY.x/4, finalXY.y/4, 1)];// / (numberOfRay + 1);
         }
+        if(angle >= _thirdAngleMax){
+            finalColor += _LowResTexture[int3(finalXY.x/8, finalXY.y/8, 2)];// / (numberOfRay + 1);
+        }
         //finalColor = HalfRes[finalXY/2]; //copy over half res for debug
         //also add tint if needed
         if(_showTint){
@@ -428,8 +446,36 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         //render to the eighth texture
         _LowResTexture[int3(finalXY.x, finalXY.y, 2)] = finalColor;
     }
+
+    //run TAA
+    //
+    //works by adding color from past frames with decreasing weight, and then dividing by the final combined weight to get a weighted average
+    if(!(_runRes > 0)){ 
+        int currentFrame = _temporalFramePosition;//start at current frame
+        float totalWeight = 1.0f;
+        float currentWeight = 1.0f;
+        for(int i = 0; i < _totalNoTAAFrames; i++){
+            currentFrame--;//go to previous frame
+            if(currentFrame < 0){
+                currentFrame += _totalNoTAAFrames; //go to front of list/wraparound
+            }
+            currentWeight *= _weightDecreaseFactor; //exponential decrease
+            if(currentWeight <= 0){
+                //we are no longer interested in frames beyond this point.
+                break;
+            }
+            finalColor += (_PastTexture[int3(finalXY.x, finalXY.y, currentFrame)] * currentWeight);
+            totalWeight += currentWeight;
+        }
+        finalColor /= totalWeight;
+    }
+
+
     //test change to force recompile.....
     Result[finalXY] = finalColor;
+
+    _PastTexture[int3(finalXY.x, finalXY.y, _temporalFramePosition)] = finalColor; //write to TAA array
+
     //Result[id.xy] = finalColor;
     
 }

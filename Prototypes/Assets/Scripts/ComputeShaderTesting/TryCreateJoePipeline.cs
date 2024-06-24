@@ -36,6 +36,8 @@ public class TryCreateJoePipeline : MonoBehaviour
     public bool showTint;
     public bool showOverlay;
     public float tintBorderSize = 1f;
+    public int MaxTAAFrame = 3;
+    public float TAAWeightFactor = 0.9f;
 
     // Start is called before the first frame update
     void Start()
@@ -134,6 +136,9 @@ public class TryCreateJoePipeline : MonoBehaviour
         {
             Graphics.Blit(textureToRenderTo[i], pastTextureToRenderTo[i]);
         }
+
+        joePipeInstance.setTAAWeight(TAAWeightFactor);
+        joePipeInstance.setMaxTAAFrames(MaxTAAFrame);
 
         //long startTime = DateTime.Now.ToFileTime();
         joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, false, false);
