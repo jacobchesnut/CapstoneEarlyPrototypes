@@ -6,6 +6,7 @@
 #include "CustomOrthographicRayGenShader.compute"
 #include "CustomPinCameraRandomRayGenShader.compute"
 #include "CustomPinCameraRandomSSRayGenShader.compute"
+#include "CustomPinCameraTableRayGenShader.compute"
 
 Ray RayGeneration(uint width, uint height, uint3 id, int rayGenId, uint iter) {
     switch(rayGenId) {
@@ -23,6 +24,9 @@ Ray RayGeneration(uint width, uint height, uint3 id, int rayGenId, uint iter) {
 
         case 4:
             return CustomPinCameraRandomSS(width, height, id, iter);
+
+        case 5:
+            return CustomPinCameraTable(width, height, id, iter);
 
         default:
             return CustomPinCamera(width, height, id, iter);
@@ -45,6 +49,9 @@ uint NumberOfRay(uint width, uint height, uint3 id, int rayGenId) {
 
         case 4:
             return CustomPinCameraRandomSSNumberOfRay(width, height, id);
+
+        case 5:
+            return CustomPinCameraTableNumberOfRay(width, height, id);
 
         default:
             return 0;

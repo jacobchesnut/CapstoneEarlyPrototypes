@@ -265,7 +265,7 @@ namespace OpenRT
                 lowResTextures = new RenderTexture(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT, 32, 
                     RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
                 lowResTextures.enableRandomWrite = true;
-                lowResTextures.volumeDepth = 3;
+                lowResTextures.volumeDepth = 4;
                 lowResTextures.dimension = TextureDimension.Tex2DArray;
                 lowResTextures.Create();
 
@@ -603,20 +603,27 @@ namespace OpenRT
         private void RunSendTextureToUnity(CommandBuffer commands, RenderTexture targeTexture,
             ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo)
         {
+
             m_mainShader.SetInt("_runRes", 1); //need to run shared rays first
-            int threadGroupsX = Mathf.CeilToInt(m_target.width / 16.0f);
-            int threadGroupsY = Mathf.CeilToInt(m_target.height / 16.0f);
+            int threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
+            int threadGroupsY = Mathf.CeilToInt(m_target.height / 8.0f);
+            //run once, this will create the full-res shared texture which is kept internally
+            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+
+            m_mainShader.SetInt("_runRes", 2); //need to run shared rays first
+            threadGroupsX = Mathf.CeilToInt(m_target.width / 16.0f);
+            threadGroupsY = Mathf.CeilToInt(m_target.height / 16.0f);
             //run once, this will create the half-res shared texture which is kept internally
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
             threadGroupsX = Mathf.CeilToInt(m_target.width / 32.0f);
             threadGroupsY = Mathf.CeilToInt(m_target.height / 32.0f);
-            m_mainShader.SetInt("_runRes", 2); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 3); //need to run shared rays first
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
             threadGroupsX = Mathf.CeilToInt(m_target.width / 64.0f);
             threadGroupsY = Mathf.CeilToInt(m_target.height / 64.0f);
-            m_mainShader.SetInt("_runRes", 3); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 4); //need to run shared rays first
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
 

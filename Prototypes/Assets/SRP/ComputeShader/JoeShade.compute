@@ -56,9 +56,10 @@ float4 _viewVector; //vector of the gaze view (x, y, z), a is unused
 //float _innerAngleMax; //area of foveal region
 //tells the shader we're generating the lower res images for ray sharing
 //0 = final image, including any foveated rendering
-//1 = half resolution
-//2 = quarter resolution
-//3 = eighth
+//1 = full resolution
+//2 = half resolution
+//3 = quarter resolution
+//4 = eighth resolution
 int _runRes; 
 bool _runNoFoveated; //tells the shader to make the frame without using foveated rendering
 bool _onlyOneSample; //tells the shader to ignore the number of samples to use
@@ -115,16 +116,21 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     uint width, height;
     Result.GetDimensions(width, height);
     if(_runRes == 1){
+        //width and height remain the same because this is full resolution
+        //width = width;
+        //height = height;
+    }
+    if(_runRes == 2){
         //divide width and height by 2, because we're rendering to the half res Texture
         width = width / 2;
         height = height / 2;
     }
-    if(_runRes == 2){
+    if(_runRes == 3){
         //divide width and height by 4, because we're rendering to the quarter res Texture
         width = width / 4;
         height = height / 4;
     }
-    if(_runRes == 3){
+    if(_runRes == 4){
         //divide width and height by 8, because we're rendering to the eighth res Texture
         width = width / 8;
         height = height / 8;
@@ -188,16 +194,20 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float angleFromCenter = acos(vecA.z/magA);
 
 
-    if((angle < (_innerAngleMax - 0.005f) || angle > (_secondAngleMax + 0.005f)) && (_runRes == 1)){ //add small bump to avoid edge cases
+    if((angle > (_innerAngleMax + 0.005f)) && (_runRes == 1)){ //add small bump to avoid edge cases
         _LowResTexture[int3(finalXY.x, finalXY.y, 0)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
         return;
     }
-    if((angle < (_secondAngleMax - 0.005f) || angle > (_thirdAngleMax + 0.005f)) && (_runRes == 2)){ //add small bump to avoid edge cases
+    if((angle < (_innerAngleMax - 0.005f) || angle > (_secondAngleMax + 0.005f)) && (_runRes == 2)){ //add small bump to avoid edge cases
         _LowResTexture[int3(finalXY.x, finalXY.y, 1)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
         return;
     }
-    if(angle < (_thirdAngleMax - 0.005f) && (_runRes == 3)){
+    if((angle < (_secondAngleMax - 0.005f) || angle > (_thirdAngleMax + 0.005f)) && (_runRes == 3)){ //add small bump to avoid edge cases
         _LowResTexture[int3(finalXY.x, finalXY.y, 2)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
+        return;
+    }
+    if(angle < (_thirdAngleMax - 0.005f) && (_runRes == 4)){
+        _LowResTexture[int3(finalXY.x, finalXY.y, 3)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
         return;
     }
 
@@ -222,19 +232,20 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             numberOfRay = 1; //only have one ray
         }
         else{
-            if(angle > _maxQualityAngleMax){
-                numberOfRay = 1; //only have one ray outside of the inner radius
-            }
-            if(angle > _innerAngleMax){
+            numberOfRay = 0; //do not render ray on final pass
+            //if(angle > _maxQualityAngleMax){
+            //    numberOfRay = 1; //only have one ray outside of the inner radius
+            //}
+            //if(angle > _innerAngleMax){
                 //only use low res (don't shoot rays)
-                numberOfRay = 0;
-            }
-            if(angle > _thirdAngleMax){
+            //    numberOfRay = 0;
+            //}
+            //if(angle > _thirdAngleMax){
                 //outside viewable area (don't render)
                 //actually, for now render as it may be better to adapt to center of display.
                 //Result[finalXY] = float4(0,0,0,1);
                 //return;
-            }
+            //}
             if(angleFromCenter > 0.785f){ //45 degrees from center
                 //outside viewable area (don't render)
                 Result[finalXY] = float4(0,0,0,1);
@@ -254,7 +265,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     [fastopt] for (uint i = 0; i < numberOfRay; i++) 
     {
-        Ray ray = RayGeneration(width, height, id, _RayGenID, i);
+        //for multi-sampling in one frame
+        //Ray ray = RayGeneration(width, height, id, _RayGenID, i);
+
+        //otherwise for multisampling with TAA
+        Ray ray = RayGeneration(width, height, id, _RayGenID, _temporalFramePosition);
 
         // Trace
         RayHit hit = Trace(ray);    // Exclude nothing
@@ -402,14 +417,17 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
     //add shared Ray
     if(!(_runRes > 0) && !_runNoFoveated){
+        if(angle < _innerAngleMax){
+            finalColor += _LowResTexture[int3(finalXY.x, finalXY.y, 0)];// / (numberOfRay + 1);
+        }
         if(angle >= _innerAngleMax && angle < _secondAngleMax){
-            finalColor += _LowResTexture[int3(finalXY.x/2, finalXY.y/2, 0)];// / (numberOfRay + 1);
+            finalColor += _LowResTexture[int3(finalXY.x/2, finalXY.y/2, 1)];// / (numberOfRay + 1);
         }
         if(angle >= _secondAngleMax && angle < _thirdAngleMax){
-            finalColor += _LowResTexture[int3(finalXY.x/4, finalXY.y/4, 1)];// / (numberOfRay + 1);
+            finalColor += _LowResTexture[int3(finalXY.x/4, finalXY.y/4, 2)];// / (numberOfRay + 1);
         }
         if(angle >= _thirdAngleMax){
-            finalColor += _LowResTexture[int3(finalXY.x/8, finalXY.y/8, 2)];// / (numberOfRay + 1);
+            finalColor += _LowResTexture[int3(finalXY.x/8, finalXY.y/8, 3)];// / (numberOfRay + 1);
         }
         //finalColor = HalfRes[finalXY/2]; //copy over half res for debug
         //also add tint if needed
@@ -435,17 +453,23 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
 
     if(_runRes == 1){
-        //render to the half texture
+        //render to the full texture
         _LowResTexture[int3(finalXY.x, finalXY.y, 0)] = finalColor;
     }
     if(_runRes == 2){
-        //render to the quarter texture
+        //render to the half texture
         _LowResTexture[int3(finalXY.x, finalXY.y, 1)] = finalColor;
     }
     if(_runRes == 3){
-        //render to the eighth texture
+        //render to the quarter texture
         _LowResTexture[int3(finalXY.x, finalXY.y, 2)] = finalColor;
     }
+    if(_runRes == 4){
+        //render to the eighth texture
+        _LowResTexture[int3(finalXY.x, finalXY.y, 3)] = finalColor;
+    }
+
+    _PastTexture[int3(finalXY.x, finalXY.y, _temporalFramePosition)] = finalColor; //write to TAA array before doing TAA
 
     //run TAA
     //
@@ -471,10 +495,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
 
 
-    //test change to force recompile.....
+    //test change to force recompile
+
     Result[finalXY] = finalColor;
 
-    _PastTexture[int3(finalXY.x, finalXY.y, _temporalFramePosition)] = finalColor; //write to TAA array
+    
 
     //Result[id.xy] = finalColor;
     

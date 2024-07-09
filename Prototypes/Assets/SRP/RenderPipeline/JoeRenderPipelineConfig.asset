@@ -20,4 +20,4 @@ MonoBehaviour:
   enableShadow: 1
   fogColor: {r: 0, g: 0, b: 0, a: 1}
   fogFactor: 0
-  rayGenId: 4
+  rayGenId: 5
