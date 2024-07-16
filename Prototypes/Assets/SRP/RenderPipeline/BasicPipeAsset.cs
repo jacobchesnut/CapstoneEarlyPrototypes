@@ -24,7 +24,7 @@ namespace OpenRT {
         // Function to return an instance of this pipeline
         // This implementation for Unity 2019.2
         protected override RenderPipeline CreatePipeline() {
-            return new BasicPipeInstance(clearColor, mainShader, m_config); // Our custom renderer named BasicPipeInstance
+            return new BasicPipeInstance(clearColor, mainShader, m_config, null); // Our custom renderer named BasicPipeInstance
         }
 
         // Old implementation from Unity 2018.4

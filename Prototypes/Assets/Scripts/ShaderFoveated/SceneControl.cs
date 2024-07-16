@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using Oculus.Voice.Windows;
 using UnityEngine.Experimental.Rendering;
 using System;
+using Unity.VisualScripting;
 
 public class SceneControl : MonoBehaviour
 {
@@ -113,6 +114,26 @@ public class SceneControl : MonoBehaviour
     //material for blur
     public Material BlurMaterial = null;
 
+    public enum testMode
+    {
+        NoTest = 0,
+        OffsetTest = 1,
+        BorderTest = 2,
+        ImprecisionTest = 3
+    }
+
+    private testMode testState = 0;
+
+    //testing materials
+    public Material OffsetTestMaterial = null;
+    public Material BorderTestMaterial = null;
+
+    //testing variables
+    private float testXOffset = 0f;
+    private float testYOffset = 0f;
+    private float testBorderAngle = 0f;
+    public float testImprecision = 0f;
+
     //render texture for blur
     private RenderTexture middle = null;
 
@@ -135,6 +156,30 @@ public class SceneControl : MonoBehaviour
         {
             framesLeft = framesToCapture;
         }
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            switch (testState)
+            {
+                case testMode.NoTest:
+                    testState = testMode.OffsetTest;
+                    break;
+                case testMode.OffsetTest:
+                    testState = testMode.BorderTest;
+                    break;
+                case testMode.BorderTest:
+                    testState = testMode.ImprecisionTest;
+                    break;
+                case testMode.ImprecisionTest:
+                    testState = testMode.NoTest;
+                    break;
+                default:
+                    Debug.LogError("teststate in unknown state!");
+                    break;
+            }
+        }
+        testBehavior();
+
+        
         // Sets per-scene information
         //int BitMask = calculateBitmask();
         //send bitmask
@@ -197,6 +242,49 @@ public class SceneControl : MonoBehaviour
         FoveatedMat.SetInt("_flag", f);*/
     }
 
+    private void testBehavior()
+    {
+        switch (testState)
+        {
+            case testMode.NoTest:
+                //do nothing
+                break;
+            case testMode.OffsetTest:
+                if (Input.GetKey(KeyCode.UpArrow))
+                {
+                    testYOffset += 5 * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.DownArrow))
+                {
+                    testYOffset -= 5 * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.RightArrow))
+                {
+                    testXOffset += 5 * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.LeftArrow))
+                {
+                    testXOffset -= 5 * Time.deltaTime;
+                }
+                break;
+            case testMode.BorderTest:
+                if (Input.GetKey(KeyCode.UpArrow))
+                {
+                    testBorderAngle += 5 * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.DownArrow))
+                {
+                    testBorderAngle -= 5 * Time.deltaTime;
+                }
+                break;
+            case testMode.ImprecisionTest:
+                break;
+            default:
+                Debug.LogError("teststate in unknown state!");
+                break;
+        }
+    }
+
     
     private int calculateBitmask()
     {
@@ -255,6 +343,12 @@ public class SceneControl : MonoBehaviour
 
     public void RenderingImage(RenderTexture src, RenderTexture dst, Vector3 eyeLookVector, Vector3 trueLookVector, Vector3 frustumInformation, RenderTexture oldTex)
     {
+        if(testState != testMode.NoTest)
+        {
+            testRender(src, dst, eyeLookVector, trueLookVector, frustumInformation);
+            return;
+        }
+
         if(middle == null)
         {
             middle = new RenderTexture(src);
@@ -298,6 +392,47 @@ public class SceneControl : MonoBehaviour
         //function messes with active render texture, so make sure dst is called last
         captureRenderTexture(src, "src");
         captureRenderTexture(dst, "dst");
+    }
+
+    private void testRender(RenderTexture src, RenderTexture dst, Vector3 eyeLookVector, Vector3 trueLookVector, Vector3 frustumInformation)
+    {
+        switch (testState)
+        {
+            case testMode.OffsetTest:
+                OffsetTestMaterial.SetVector("_frustumVector", new Vector4(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0));
+                if (angleOffsetX < 0)
+                {
+                    OffsetTestMaterial.SetFloat("_offsetAngleX", -testXOffset);//degrees, reverse for left eye
+                }
+                else
+                {
+                    OffsetTestMaterial.SetFloat("_offsetAngleX", testXOffset);//degrees
+                }
+                OffsetTestMaterial.SetFloat("_offsetAngleY", testYOffset);//degrees
+                Graphics.Blit(src, dst, OffsetTestMaterial);
+                break;
+            case testMode.BorderTest:
+                BorderTestMaterial.SetVector("_frustumVector", new Vector4(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0));
+                if (angleOffsetX < 0)
+                {
+                    BorderTestMaterial.SetFloat("_offsetAngleX", -testXOffset);//degrees, reverse for left eye
+                }
+                else
+                {
+                    BorderTestMaterial.SetFloat("_offsetAngleX", testXOffset);//degrees
+                }
+                BorderTestMaterial.SetFloat("_offsetAngleY", testYOffset);//degrees
+                BorderTestMaterial.SetFloat("_outsideAngle", testBorderAngle * Mathf.Deg2Rad); //radians
+                Graphics.Blit(src, dst, BorderTestMaterial);
+                break;
+            case testMode.ImprecisionTest:
+                testImprecision = Vector3.Angle(eyeLookVector, trueLookVector);
+                Graphics.Blit(src, dst);
+                break;
+            default:
+                Debug.LogError("teststate in unknown state!");
+                break;
+        }
     }
 
     public void captureRenderTexture(RenderTexture renderToCapture, string additionalName = "")

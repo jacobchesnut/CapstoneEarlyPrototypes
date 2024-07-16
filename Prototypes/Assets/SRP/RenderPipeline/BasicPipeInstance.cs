@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Oculus.Voice.Windows;
+using System.Collections;
 using System.Collections.Generic;
 // - 
 using UnityEngine;
@@ -75,14 +76,17 @@ namespace OpenRT
 
         private ComputeBuffer m_lightInfoBuffer;
 
+        private Material m_blurMaterial = null; //material for blur post process (set on create)
+
         //additional for if we need to only be rendering for one frame (currently commented out below)
         private bool onlyOnce = false;
 
-        public BasicPipeInstance(Color clearColor, ComputeShader mainShader, List<RenderPipelineConfigObject> allConfig)
+        public BasicPipeInstance(Color clearColor, ComputeShader mainShader, List<RenderPipelineConfigObject> allConfig, Material BlurMaterial)
         {
             m_clearColor = clearColor;
             m_mainShader = mainShader;
             m_allConfig = allConfig;
+            m_blurMaterial = BlurMaterial;
 
             if (m_mainShader == null)
             {
@@ -165,6 +169,7 @@ namespace OpenRT
                 RunSetCameraToMainShader(camera, i);
                 RunRayTracing(ref commands, m_target, m_lowResTextures);
                 RunSetFoveatedVariables(foveatedInfo, i);
+                RunSetBlurVariables(foveatedInfo, i);
                 RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i]);
                 i++;
             }
@@ -180,6 +185,23 @@ namespace OpenRT
             //Debug.Log("vr render pass count is: " + vrPCount);
 
             RunBufferCleanUp();
+        }
+
+        private void RunSetBlurVariables(ShaderFoveatedInfo foveatedInfo, int camNumber)
+        {
+            m_blurMaterial.SetFloat("_widthPix", TryCreateJoePipeline.RENDER_TEXTURE_WIDTH);
+            m_blurMaterial.SetFloat("_heightPix", TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT);
+            m_blurMaterial.SetVector("_frustumVector", foveatedInfo._frustumVector[camNumber]);
+            m_blurMaterial.SetVector("_viewVector", foveatedInfo._viewVector[camNumber]);
+            if(camNumber== 0)
+            {
+                m_blurMaterial.SetFloat("_offsetAngleX", -11f); //assume left eye
+            }
+            else
+            {
+                m_blurMaterial.SetFloat("_offsetAngleX", 11f);
+            }
+            m_blurMaterial.SetFloat("_offsetAngleY", 10f);
         }
 
         private void RunSetFoveatedVariables(ShaderFoveatedInfo foveatedInfo, int camNumber)
@@ -604,13 +626,13 @@ namespace OpenRT
             ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo)
         {
 
-            m_mainShader.SetInt("_runRes", 1); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 1);
             int threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(m_target.height / 8.0f);
             //run once, this will create the full-res shared texture which is kept internally
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
-            m_mainShader.SetInt("_runRes", 2); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 2);
             threadGroupsX = Mathf.CeilToInt(m_target.width / 16.0f);
             threadGroupsY = Mathf.CeilToInt(m_target.height / 16.0f);
             //run once, this will create the half-res shared texture which is kept internally
@@ -618,17 +640,19 @@ namespace OpenRT
 
             threadGroupsX = Mathf.CeilToInt(m_target.width / 32.0f);
             threadGroupsY = Mathf.CeilToInt(m_target.height / 32.0f);
-            m_mainShader.SetInt("_runRes", 3); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 3);
+            //quarter
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
             threadGroupsX = Mathf.CeilToInt(m_target.width / 64.0f);
             threadGroupsY = Mathf.CeilToInt(m_target.height / 64.0f);
-            m_mainShader.SetInt("_runRes", 4); //need to run shared rays first
+            m_mainShader.SetInt("_runRes", 4);
+            //eigth
             m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
 
             //now we can run foveated raytracer
-            m_mainShader.SetInt("_runRes", 0); //now run full res
+            m_mainShader.SetInt("_runRes", 0); //now patch together as post process
 
             //directly dispatch compute shader and blit to outside texture
             threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
@@ -640,7 +664,9 @@ namespace OpenRT
                 m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
             //}
 
-            Graphics.Blit(targeTexture, textureToWriteTo);
+            //additional setup for post process blur, while blit to final:
+
+            Graphics.Blit(targeTexture, textureToWriteTo, m_blurMaterial);
 
             //commands.Clear(); // Clear the command buffer
         }

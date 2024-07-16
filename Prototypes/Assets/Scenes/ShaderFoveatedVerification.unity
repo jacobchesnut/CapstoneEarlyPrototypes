@@ -4808,6 +4808,8 @@ MonoBehaviour:
   leftOutsideAngle: 90
   FoveatedMat: {fileID: 2100000, guid: efb29d8476336014d86bd2b26464f423, type: 2}
   BlurMaterial: {fileID: 2100000, guid: e497baf384b40924184f6083151d0d18, type: 2}
+  OffsetTestMaterial: {fileID: 2100000, guid: 6b92c95ce5a216749930943b5033c3e1, type: 2}
+  BorderTestMaterial: {fileID: 2100000, guid: aa6c1dc591197be4b88fc3940d3c8a70, type: 2}
 --- !u!1001 &973270198
 PrefabInstance:
   m_ObjectHideFlags: 0

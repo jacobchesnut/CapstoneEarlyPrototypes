@@ -38,11 +38,12 @@ public class TryCreateJoePipeline : MonoBehaviour
     public float tintBorderSize = 1f;
     public int MaxTAAFrame = 3;
     public float TAAWeightFactor = 0.9f;
+    public Material BlurMaterial = null;
 
     // Start is called before the first frame update
     void Start()
     {
-        joePipeInstance = new BasicPipeInstance(clearColor, mainShader, m_config);
+        joePipeInstance = new BasicPipeInstance(clearColor, mainShader, m_config, BlurMaterial);
         textureToRenderTo = new RenderTexture[camerasToRenderTo.Length];
         pastTextureToRenderTo = new RenderTexture[camerasToRenderTo.Length];
         for (int i = 0; i < camerasToRenderTo.Length; i++)

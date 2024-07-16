@@ -623,6 +623,7 @@ MonoBehaviour:
   tintBorderSize: 1
   MaxTAAFrame: 3
   TAAWeightFactor: 0.2
+  BlurMaterial: {fileID: 2100000, guid: 4a440cd8c1a55fa428b8677c9b196bbe, type: 2}
 --- !u!20 &455045220
 Camera:
   m_ObjectHideFlags: 0
