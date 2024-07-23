@@ -76,6 +76,16 @@ RWTexture2DArray<float4> _PastTexture; //past frame data for TAA
 //RWTexture2D<float4> QuarterRes; //quarter resolution texture for ray sharing
 //RWTexture2D<float4> EighthRes; //eighth resolution texture for ray sharing
 
+//calibration info
+float _xOffset;
+float _yOffset;
+//these should be in radians
+float _innerAngleMax; //first
+float _secondAngleMax; //second
+float _thirdAngleMax; //third
+float _boundaryAngleMax;
+
+
 // Placeholder
 float3 missShader(float3 direction) {
     // Sample the skybox and write it
@@ -138,21 +148,21 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     //default region cutoff points:
     float _maxQualityAngleMax = 0.091f;
-    float _innerAngleMax = 0.222f;
-    float _secondAngleMax = 0.485f;
-    float _thirdAngleMax = 1.010f;
+    //float _innerAngleMax = 0.222f;
+    //float _secondAngleMax = 0.485f;
+    //float _thirdAngleMax = 1.010f;
 
     //calculate offset
     //currently static numbers for the VR cameras
     float FOV = 90;
     //float FOVRad = 1.5708;
-    float xOffset = 11;
-    if(_LeftEye){
-        xOffset = -11;
-    }
-    float yOffset = 10;
+    //float _xOffset = 11;
+    //if(_LeftEye){
+    //    _xOffset = -11;
+    //}
+    //float yOffset = 10;
 
-    int2 finalXY = {id.x + ((width * xOffset) / FOV), id.y + ((height * yOffset) / FOV)};
+    int2 finalXY = {id.x + ((width * _xOffset) / FOV), id.y + ((height * _yOffset) / FOV)};
 
     //wrap around if the offset places us outside the array bounds
     if(finalXY.x < 0){

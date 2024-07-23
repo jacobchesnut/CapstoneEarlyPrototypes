@@ -13,6 +13,10 @@ public class TryCreateJoePipeline : MonoBehaviour
     public static int RENDER_TEXTURE_WIDTH = 2160;
     //default height meta uses = 2224
     public static int RENDER_TEXTURE_HEIGHT = 2224;
+    //average region info
+    public static float DEFAULT_FIRST_REGION = 0.222f;
+    public static float DEFAULT_SECOND_REGION = 0.485f;
+    public static float DEFAULT_THIRD_REGION = 1.010f;
 
 
     //for creating the pipeline
@@ -40,6 +44,18 @@ public class TryCreateJoePipeline : MonoBehaviour
     public float TAAWeightFactor = 0.9f;
     public Material BlurMaterial = null;
 
+    //config parameters from user tests
+    private float testXOffset = 0f;
+    private float testYOffset = 0f;
+    private float testBorderAngle = 0f;
+    private float testImprecision = 0f;
+    private float testFirstQualityOffsetLeft = 90f;
+    private float testSecondQualityOffsetLeft = 90f;
+    private float testThirdQualityOffsetLeft = 90f;
+    private float testFirstQualityOffsetRight = 90f;
+    private float testSecondQualityOffsetRight = 90f;
+    private float testThirdQualityOffsetRight = 90f;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -61,6 +77,8 @@ public class TryCreateJoePipeline : MonoBehaviour
 
         differenceShader.SetTexture(0, "Result", differenceTexture);
         //textureToRenderTo = new RenderTexture(Screen.width, Screen.height, 0); //currently screen width and height, will need pixel counts for VR camera
+
+        readCalibrationInfo();
     }
 
     // Update is called once per frame
@@ -84,6 +102,30 @@ public class TryCreateJoePipeline : MonoBehaviour
             RENDER_TEXTURE_WIDTH *= 2;
             RENDER_TEXTURE_HEIGHT *= 2;
         }
+    }
+
+    private void readCalibrationInfo()
+    {
+        FileStream stream = File.Open("C:\\Users\\jakee\\CapstoneShared\\FoveatedCalibration.dat", FileMode.Open);
+        BinaryReader reader = new BinaryReader(stream);
+        testXOffset = reader.ReadSingle();
+        testYOffset = reader.ReadSingle();
+        testBorderAngle = reader.ReadSingle();
+        testImprecision = reader.ReadSingle();
+        testFirstQualityOffsetLeft = reader.ReadSingle();
+        testFirstQualityOffsetLeft = ((testFirstQualityOffsetLeft * Mathf.Deg2Rad) + DEFAULT_FIRST_REGION) / 2;
+        testSecondQualityOffsetLeft = reader.ReadSingle();
+        testSecondQualityOffsetLeft = ((testSecondQualityOffsetLeft * Mathf.Deg2Rad) + DEFAULT_SECOND_REGION) / 2;
+        testThirdQualityOffsetLeft = reader.ReadSingle();
+        testThirdQualityOffsetLeft = ((testThirdQualityOffsetLeft * Mathf.Deg2Rad) + DEFAULT_THIRD_REGION) / 2;
+        testFirstQualityOffsetRight = reader.ReadSingle();
+        testFirstQualityOffsetRight = ((testFirstQualityOffsetRight * Mathf.Deg2Rad) + DEFAULT_FIRST_REGION) / 2;
+        testSecondQualityOffsetRight = reader.ReadSingle();
+        testSecondQualityOffsetRight = ((testSecondQualityOffsetRight * Mathf.Deg2Rad) + DEFAULT_SECOND_REGION) / 2;
+        testThirdQualityOffsetRight = reader.ReadSingle();
+        testThirdQualityOffsetRight = ((testThirdQualityOffsetRight * Mathf.Deg2Rad) + DEFAULT_THIRD_REGION) / 2;
+        reader.Close();
+        stream.Close();
     }
 
     //only gets called if camera attached to object
@@ -132,8 +174,19 @@ public class TryCreateJoePipeline : MonoBehaviour
         infoToSend._showOverlay = showOverlay;
         infoToSend._debugRegionBorderSize = Mathf.Deg2Rad * tintBorderSize;
 
+        //calibration info
+        infoToSend._XOffset = testXOffset;
+        infoToSend._YOffset = testYOffset;
+        infoToSend._BorderAngle = testBorderAngle;
+        infoToSend._FirstQualityOffsetLeft = testFirstQualityOffsetLeft;
+        infoToSend._SecondQualityOffsetLeft = testSecondQualityOffsetLeft;
+        infoToSend._ThirdQualityOffsetLeft = testThirdQualityOffsetLeft;
+        infoToSend._FirstQualityOffsetRight = testFirstQualityOffsetRight;
+        infoToSend._SecondQualityOffsetRight = testSecondQualityOffsetRight;
+        infoToSend._ThirdQualityOffsetRight = testThirdQualityOffsetRight;
+
         //blit out old render textures for differences
-        for(int i = 0; i < textureToRenderTo.Length; i++)
+        for (int i = 0; i < textureToRenderTo.Length; i++)
         {
             Graphics.Blit(textureToRenderTo[i], pastTextureToRenderTo[i]);
         }
@@ -252,4 +305,13 @@ public struct ShaderFoveatedInfo
     public float _debugRegionBorderSize;
     public bool _showTint;
     public bool _showOverlay;
+    public float _XOffset;
+    public float _YOffset;
+    public float _BorderAngle;
+    public float _FirstQualityOffsetLeft;
+    public float _SecondQualityOffsetLeft;
+    public float _ThirdQualityOffsetLeft;
+    public float _FirstQualityOffsetRight;
+    public float _SecondQualityOffsetRight;
+    public float _ThirdQualityOffsetRight;
 }

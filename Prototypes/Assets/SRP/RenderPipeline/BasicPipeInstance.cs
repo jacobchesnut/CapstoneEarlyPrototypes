@@ -216,13 +216,29 @@ namespace OpenRT
             m_mainShader.SetInt("_totalNoTAAFrames", m_MaxTAAFrame);
             m_mainShader.SetInt("_temporalFramePosition", m_CurrentTAAFrame);
 
-            if(camNumber == 0)
+            //calibration info
+            m_mainShader.SetFloat("_yOffset", foveatedInfo._YOffset);
+            m_mainShader.SetFloat("_boundaryAngleMax", foveatedInfo._BorderAngle);
+
+            if (camNumber == 0)
             {
+                //left eye
                 m_mainShader.SetTexture(0, "_PastTexture", m_TAATextures[0]);
+                //calibration info
+                m_mainShader.SetFloat("_xOffset", foveatedInfo._XOffset);
+                m_mainShader.SetFloat("_innerAngleMax", foveatedInfo._FirstQualityOffsetLeft);
+                m_mainShader.SetFloat("_secondAngleMax", foveatedInfo._SecondQualityOffsetLeft);
+                m_mainShader.SetFloat("_thirdAngleMax", foveatedInfo._ThirdQualityOffsetLeft);
             }
             else
             {
+                //right eye
                 m_mainShader.SetTexture(0, "_PastTexture", m_TAATextures[1]);
+                //calibration info
+                m_mainShader.SetFloat("_xOffset", -foveatedInfo._XOffset);
+                m_mainShader.SetFloat("_innerAngleMax", foveatedInfo._FirstQualityOffsetRight);
+                m_mainShader.SetFloat("_secondAngleMax", foveatedInfo._SecondQualityOffsetRight);
+                m_mainShader.SetFloat("_thirdAngleMax", foveatedInfo._ThirdQualityOffsetRight);
             }
 
         }
