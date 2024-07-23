@@ -110,6 +110,7 @@ public class TryCreateJoePipeline : MonoBehaviour
         BinaryReader reader = new BinaryReader(stream);
         testXOffset = reader.ReadSingle();
         testYOffset = reader.ReadSingle();
+        testYOffset += 12;
         testBorderAngle = reader.ReadSingle();
         testImprecision = reader.ReadSingle();
         testFirstQualityOffsetLeft = reader.ReadSingle();

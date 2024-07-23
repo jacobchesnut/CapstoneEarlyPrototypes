@@ -123,7 +123,7 @@ Shader "Unlit/QualityTestShader"
                 float centerX = ((_offsetAngleX + _addedXOffset) * 0.011f);
 
                 //use pattern if near middle of screen on y axis, otherwise just display white
-                if(abs(fromV.uv.y + centerY - 0.5) < 0.02f && abs(fromV.uv.x + centerX - 0.5) < 0.02f){
+                if(abs(fromV.uv.y + centerY - 0.5) < 0.01f && abs(fromV.uv.x + centerX - 0.5) < 0.01f){
                     c1.r = sin(fromV.uv.x * _cpdMultiplier);
                     c1.g = sin(fromV.uv.x * _cpdMultiplier);
                     c1.b = sin(fromV.uv.x * _cpdMultiplier);

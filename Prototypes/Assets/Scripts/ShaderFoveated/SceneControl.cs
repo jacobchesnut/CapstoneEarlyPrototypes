@@ -150,12 +150,12 @@ public class SceneControl : MonoBehaviour
     private float testYOffset = 0f;
     private float testBorderAngle = 0f;
     private float testImprecision = 0f;
-    private float testFirstQualityOffsetLeft = 90f;
-    private float testSecondQualityOffsetLeft = 90f;
-    private float testThirdQualityOffsetLeft = 90f;
-    private float testFirstQualityOffsetRight = 90f;
-    private float testSecondQualityOffsetRight = 90f;
-    private float testThirdQualityOffsetRight = 90f;
+    private float testFirstQualityOffsetLeft = 45f;
+    private float testSecondQualityOffsetLeft = 45f;
+    private float testThirdQualityOffsetLeft = 45f;
+    private float testFirstQualityOffsetRight = 45f;
+    private float testSecondQualityOffsetRight = 45f;
+    private float testThirdQualityOffsetRight = 45f;
 
     //render texture for blur
     private RenderTexture middle = null;
@@ -489,6 +489,7 @@ public class SceneControl : MonoBehaviour
         if(testState != testMode.NoTest)
         {
             testRender(src, dst, eyeLookVector, trueLookVector, frustumInformation);
+            captureRenderTexture(dst, "dst");
             return;
         }
 
