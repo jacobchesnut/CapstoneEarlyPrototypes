@@ -369,9 +369,14 @@ namespace OpenRT
             m_primitives.Add(primitive);
         }
 
-        public void AddWorldToPrimitive(Matrix4x4 worldToPrimitive)
+        public void AddWorldToPrimitive(ref Matrix4x4 worldToPrimitive)
         {
             m_worldToPrimitives.Add(worldToPrimitive);
+        }
+
+        public void ChangeWorldToPrimitive(Matrix4x4 worldToPrimitive, int index)
+        {
+            m_worldToPrimitives[index] = worldToPrimitive;
         }
 
         public void AddAccelerationStructureGeometry(List<float> accelerationStructureData,
@@ -411,9 +416,62 @@ namespace OpenRT
             }
         }
 
+        public void ModAccelerationStructureGeometry(List<float> accelerationStructureData,
+                                                     List<float> accelGeometryData,
+                                                     List<int> accelGeometryMapping,
+                                                     int intersectIndex, int geoOffset, int mapOffset, int dataOffset)
+        {
+            if (m_objectLevelAccelerationStructureData.ContainsKey(intersectIndex))
+            {
+                List<float> toMod = m_objectLevelAccelerationStructureData[intersectIndex];
+                for(int i = 0; i < accelerationStructureData.Count; i++)
+                {
+                    toMod[i + dataOffset] = accelerationStructureData[i];
+                }
+                m_objectLevelAccelerationStructureData[intersectIndex] = toMod;
+            }
+            else
+            {
+                Debug.LogError("ModAccelerationStructureGeometry new intersect index!");
+            }
+
+            if (m_objectLevelAccelerationStructureGeometryData.ContainsKey(intersectIndex))
+            {
+                List<float> toMod = m_objectLevelAccelerationStructureGeometryData[intersectIndex];
+                for (int i = 0; i < accelGeometryData.Count; i++)
+                {
+                    toMod[i + geoOffset] = accelGeometryData[i];
+                }
+                m_objectLevelAccelerationStructureGeometryData[intersectIndex] = toMod;
+            }
+            else
+            {
+                Debug.LogError("ModAccelerationStructureGeometry new intersect index!");
+            }
+
+            if (m_objectLevelAccelerationStructureGeometryMapping.ContainsKey(intersectIndex))
+            {
+                List<int> toMod = m_objectLevelAccelerationStructureGeometryMapping[intersectIndex];
+                for (int i = 0; i < accelGeometryMapping.Count; i++)
+                {
+                    toMod[i + mapOffset] = accelGeometryMapping[i];
+                }
+                m_objectLevelAccelerationStructureGeometryMapping[intersectIndex] = toMod;
+            }
+            else
+            {
+                Debug.LogError("ModAccelerationStructureGeometry new intersect index!");
+            }
+        }
+
         public void ClearTopLevelBVH()
         {
             topLevelBVH.Clear();
+        }
+
+        public void RemoveTopLevelBVH(SceneParser.RenderConnector toRemove)
+        {
+            topLevelBVH.RemoveBoundingBox(toRemove.r_box);
         }
 
         public void ClearAllGeometries()
@@ -433,6 +491,21 @@ namespace OpenRT
 
             m_materials.Clear();
             m_materialsInstancesCount.Clear();
+        }
+
+        public void RemoveGeometry(SceneParser.RenderConnector toRemove)
+        {
+            m_geometryData.Remove(toRemove.r_intersectIndex);
+            m_geometryCount.Remove(toRemove.r_intersectIndex);
+            m_geometryStrides.Remove(toRemove.r_intersectIndex);
+            m_objectLevelAccelerationStructureData.Remove(toRemove.r_intersectIndex);
+            m_objectLevelAccelerationStructureGeometryData.Remove(toRemove.r_intersectIndex);
+            m_objectLevelAccelerationStructureGeometryDataCursor.Remove(toRemove.r_intersectIndex);
+            m_objectLevelAccelerationStructureGeometryMapping.Remove(toRemove.r_intersectIndex);
+            m_objectLevelAccelerationStructureGeometryMappingCursor.Remove(toRemove.r_intersectIndex);
+
+            m_materials.Remove(toRemove.r_material);
+            m_materialsInstancesCount.Remove(toRemove.r_material.GetClosestHitGUID());
         }
 
         public void ClearAllLights()
@@ -459,10 +532,32 @@ namespace OpenRT
             m_materialsTextureIndexList.Clear();
         }
 
+        public void RemoveMaterial(SceneParser.RenderConnector toRemove)
+        {
+            m_materialsColorList.Remove(toRemove.r_material.GetType().Name);
+            m_materialsFloatList.Remove(toRemove.r_material.GetType().Name);
+            m_materialsIntList.Remove(toRemove.r_material.GetType().Name);
+            m_materialsVector2List.Remove(toRemove.r_material.GetType().Name);
+            m_materialsVector3List.Remove(toRemove.r_material.GetType().Name);
+            m_materialsVector4List.Remove(toRemove.r_material.GetType().Name);
+            m_materialsTextureIndexList.Remove(toRemove.r_material.GetType().Name);
+        }
+
         public void ClearAllPrimitives()
         {
             m_primitives.Clear();
             m_worldToPrimitives.Clear();
+        }
+
+        public void RemovePrimitive(SceneParser.RenderConnector toRemove)
+        {
+            m_primitives.Remove(toRemove.r_primitive);
+            m_worldToPrimitives.Remove(toRemove.r_worldToPrimitive);
+        }
+
+        public void RemoveWorldToPrimitive(SceneParser.RenderConnector toRemove)
+        {
+            m_worldToPrimitives.Remove(toRemove.r_worldToPrimitive);
         }
 
         public Dictionary<ISIdx, int> GeometryCount
@@ -534,6 +629,18 @@ namespace OpenRT
             get
             {
                 return m_materials;
+            }
+        }
+
+        public int ObjectLevelAccDataCursor(int intersectShaderIdx)
+        {
+            if (m_objectLevelAccelerationStructureData.ContainsKey(intersectShaderIdx))
+            {
+                return m_objectLevelAccelerationStructureData[intersectShaderIdx].Count; //should be equivalent to other two, as they are always set to count
+            }
+            else
+            {
+                return 0;
             }
         }
 

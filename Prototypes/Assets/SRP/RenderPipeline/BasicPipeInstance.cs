@@ -21,6 +21,11 @@ namespace OpenRT
 
     public class BasicPipeInstance : RenderPipeline // Our own renderer should subclass RenderPipeline
     {
+        //if true, blocks execution until the dispatch for rendering is complete.
+        //this tells how long a frame takes to render
+        private const bool MEASURE_DISPATCH_TIME = true;
+
+
         private readonly static string s_bufferName = "Ray Tracing Render Camera";
 
 
@@ -131,7 +136,8 @@ namespace OpenRT
             }
 
             RunParseScene();
-            // -
+            //time loading buffers
+            GlobalTimer.StartStopwatch();
             RunLoadGeometryToBuffer(sceneParseResult,
                                     ref m_topLevelAcc,
                                     ref m_objectLevelAccGeoBuffers,
@@ -147,6 +153,8 @@ namespace OpenRT
                                  sceneParseResult,
                                  ref m_lightInfoBuffer,
                                  ref m_mainShader);
+            string timeElapsed = GlobalTimer.EndStopwatch();
+            Debug.Log("Time to load buffers is " + timeElapsed);
             RunSetAmbientToMainShader(m_config);
             RunSetMissShader(m_mainShader, m_config);
             RunSetRayGenerationShader(m_config.rayGenId);
@@ -641,6 +649,18 @@ namespace OpenRT
         private void RunSendTextureToUnity(CommandBuffer commands, RenderTexture targeTexture,
             ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo)
         {
+            if (MEASURE_DISPATCH_TIME) {
+                //GlobalTimer.StartStopwatch();
+                //first is to test reading from GPU without dispatch already being called.
+                //Texture2D temp = new Texture2D(targeTexture.width, targeTexture.height);
+                //RenderTexture.active = targeTexture;
+                //temp.ReadPixels(new Rect(0, 0, targeTexture.width, targeTexture.height), 0, 0); //force read from GPU, which forces block until compute shader is finished
+
+                //string timeElapsed = GlobalTimer.EndStopwatch();
+                //Debug.Log("Time to extract frame for " + camera.gameObject.name + " is " + timeElapsed);
+
+                GlobalTimer.StartStopwatch();
+            }
 
             m_mainShader.SetInt("_runRes", 1);
             int threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
@@ -679,10 +699,21 @@ namespace OpenRT
                 //Debug.Log("in dispatch");
                 m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
             //}
+            
 
             //additional setup for post process blur, while blit to final:
 
             Graphics.Blit(targeTexture, textureToWriteTo, m_blurMaterial);
+
+            if (MEASURE_DISPATCH_TIME)
+            {
+                //Texture2D temp = new Texture2D(targeTexture.width, targeTexture.height);
+                //RenderTexture.active = targeTexture;
+                //temp.ReadPixels(new Rect(0, 0, targeTexture.width, targeTexture.height), 0, 0); //force read from GPU, which forces block until compute shader is finished
+
+                string timeElapsed = GlobalTimer.EndStopwatch();
+                Debug.Log("Time to render frame for " + camera.gameObject.name + " is " + timeElapsed);
+            }
 
             //commands.Clear(); // Clear the command buffer
         }

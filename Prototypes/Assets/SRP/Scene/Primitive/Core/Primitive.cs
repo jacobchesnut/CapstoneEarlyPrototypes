@@ -34,5 +34,10 @@ namespace OpenRT
             return sizeof(int) * 6;
         }
 
+        public void setTransformIndex(int newIndex)
+        {
+            transformIndex = newIndex; //needed for dynamic objects
+        }
+
     }
 }

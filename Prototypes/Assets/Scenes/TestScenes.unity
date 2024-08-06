@@ -1437,6 +1437,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: moving car 2 (cars and 3D objects)
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 89627415b48cfcf4ea24a21275ec9489, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -6546,6 +6550,11 @@ MonoBehaviour:
   leftOutsideAngle: 90
   FoveatedMat: {fileID: 2100000, guid: efb29d8476336014d86bd2b26464f423, type: 2}
   BlurMaterial: {fileID: 2100000, guid: e497baf384b40924184f6083151d0d18, type: 2}
+  OffsetTestMaterial: {fileID: 0}
+  BorderTestMaterial: {fileID: 0}
+  QualityTestMaterial: {fileID: 0}
+  BlackoutMaterial: {fileID: 0}
+  cpdOverride: 0
 --- !u!1001 &973270198
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10737,6 +10746,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 89627415b48cfcf4ea24a21275ec9489, type: 3}
       propertyPath: m_Name
       value: moving car 1 (cars and 3D objects)
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 89627415b48cfcf4ea24a21275ec9489, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

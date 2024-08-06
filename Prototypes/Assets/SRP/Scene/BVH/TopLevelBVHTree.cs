@@ -123,6 +123,11 @@ namespace OpenRT
             m_boxes.Clear();
         }
 
+        public void RemoveBoundingBox(RTBoundingBox box)
+        {
+            m_boxes.Remove(box);
+        }
+
         private Vector3 CuttingPlane(List<RTBoundingBox> boxes)
         {
             Vector3 cp = new Vector3(0f, 0f, 0f);
