@@ -5,8 +5,10 @@ using UnityEngine;
 
 public class GlobalTimer : MonoBehaviour
 {
+    private const int STOPWATCH_ARRAY_LENGTH = 10;
     public static Stopwatch endOnFrameStart = new Stopwatch();
     private static Stopwatch stopwatch = new Stopwatch();
+    private static Stopwatch[] stopwatches = new Stopwatch[10];
 
 
     // Start is called before the first frame update
@@ -39,5 +41,40 @@ public class GlobalTimer : MonoBehaviour
         stopwatch.Reset();
         return toReturn;
         
+    }
+
+    private static void CreateStopwatchArray()
+    {
+        for(int i = 0; i < STOPWATCH_ARRAY_LENGTH; i++)
+        {
+            stopwatches[i] = new Stopwatch();
+        }
+    }
+
+    public static void StartStopwatch(int position)
+    {
+        if (stopwatches[position] == null)
+        {
+            CreateStopwatchArray();
+        }
+
+        if(position < 0 || position >= STOPWATCH_ARRAY_LENGTH)
+        {
+            return;
+        }
+        stopwatches[position].Start();
+    }
+
+    public static string EndStopwatch(int position)
+    {
+        if (position < 0 || position >= STOPWATCH_ARRAY_LENGTH)
+        {
+            return(null);
+        }
+        stopwatches[position].Stop();
+        string toReturn = stopwatches[position].Elapsed.ToString();
+        stopwatches[position].Reset();
+        return toReturn;
+
     }
 }

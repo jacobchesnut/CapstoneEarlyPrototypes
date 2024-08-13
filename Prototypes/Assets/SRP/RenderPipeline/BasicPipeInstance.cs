@@ -124,6 +124,8 @@ namespace OpenRT
         //removed override to make public
         public void Render(ScriptableRenderContext renderContext, Camera[] cameras, RenderTexture[] texToWriteTo, bool pPressed, ShaderFoveatedInfo foveatedInfo, bool runNoFoveation, bool runOnlyOneSample) // This is the function called every frame to draw on the screen
         {
+            string timeElapsed;
+            GlobalTimer.StartStopwatch(1);
             onlyOnce = pPressed;
             m_mainShader.SetBool("_runNoFoveated", runNoFoveation);
             m_mainShader.SetBool("_onlyOneSample", runOnlyOneSample);
@@ -134,10 +136,13 @@ namespace OpenRT
             {
                 return;
             }
-
+            GlobalTimer.StartStopwatch(2);
             RunParseScene();
+            timeElapsed = GlobalTimer.EndStopwatch(2);
+            Debug.Log("Time to parse scene is " + timeElapsed);
             //time loading buffers
             GlobalTimer.StartStopwatch();
+            GlobalTimer.StartStopwatch(2);
             RunLoadGeometryToBuffer(sceneParseResult,
                                     ref m_topLevelAcc,
                                     ref m_objectLevelAccGeoBuffers,
@@ -146,15 +151,24 @@ namespace OpenRT
                                     ref m_worldToPrimitiveBuffer,
                                     ref m_gemoetryInstanceBuffer,
                                     ref m_topLevelAccGeoMap);
+            timeElapsed = GlobalTimer.EndStopwatch(2);
+            Debug.Log("Time to load geometry buffer is " + timeElapsed);
+            GlobalTimer.StartStopwatch(2);
             RunLoadMaterialToBuffer(computeBufferForMaterials,
                                     sceneParseResult,
                                     ref m_mainShader);
+            timeElapsed = GlobalTimer.EndStopwatch(2);
+            Debug.Log("Time to load material buffer is " + timeElapsed);
+            GlobalTimer.StartStopwatch(2);
             RunLoadLightToBuffer(computeBufferForLights,
                                  sceneParseResult,
                                  ref m_lightInfoBuffer,
                                  ref m_mainShader);
-            string timeElapsed = GlobalTimer.EndStopwatch();
+            timeElapsed = GlobalTimer.EndStopwatch(2);
+            Debug.Log("Time to load light buffer is " + timeElapsed);
+            timeElapsed = GlobalTimer.EndStopwatch();
             Debug.Log("Time to load buffers is " + timeElapsed);
+            GlobalTimer.StartStopwatch(2);
             RunSetAmbientToMainShader(m_config);
             RunSetMissShader(m_mainShader, m_config);
             RunSetRayGenerationShader(m_config.rayGenId);
@@ -168,16 +182,21 @@ namespace OpenRT
                                                ref m_gemoetryInstanceBuffer,
                                                ref m_topLevelAccGeoMap);
             RunSetLightsToMainShader(sceneParseResult.Lights.Count, ref m_lightInfoBuffer);
+            timeElapsed = GlobalTimer.EndStopwatch(2);
+            Debug.Log("Time to load variables is " + timeElapsed);
 
             int i = 0; //iterator for going through each camera's render texture copy here
             foreach (var camera in cameras)
             {
+                GlobalTimer.StartStopwatch(2);
                 RunTargetTextureInit(ref m_target,ref m_lowResTextures, ref m_TAATextures, camera);
                 RunClearCanvas(commands, camera);
                 RunSetCameraToMainShader(camera, i);
                 RunRayTracing(ref commands, m_target, m_lowResTextures);
                 RunSetFoveatedVariables(foveatedInfo, i);
                 RunSetBlurVariables(foveatedInfo, i);
+                timeElapsed = GlobalTimer.EndStopwatch(2);
+                Debug.Log("Time to load for " + camera.name + " is " + timeElapsed);
                 RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i]);
                 i++;
             }
@@ -191,8 +210,12 @@ namespace OpenRT
             //render to VR headset
             //int vrPCount = m_displaySubsystem.GetRenderPassCount();
             //Debug.Log("vr render pass count is: " + vrPCount);
-
+            GlobalTimer.StartStopwatch(2);
             RunBufferCleanUp();
+            timeElapsed = GlobalTimer.EndStopwatch(2);
+            Debug.Log("Time to clean up buffer is " + timeElapsed);
+            timeElapsed = GlobalTimer.EndStopwatch(1);
+            Debug.Log("Time for full rendering is " + timeElapsed);
         }
 
         private void RunSetBlurVariables(ShaderFoveatedInfo foveatedInfo, int camNumber)

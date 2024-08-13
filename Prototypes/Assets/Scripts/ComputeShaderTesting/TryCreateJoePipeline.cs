@@ -132,6 +132,7 @@ public class TryCreateJoePipeline : MonoBehaviour
     //only gets called if camera attached to object
     private void OnPreRender()
     {
+        GlobalTimer.StartStopwatch(3);
         //Debug.Log("in prerender");
         //create the texture on pre render, this can then be sent out oncamerarender by other scripts with a reference here
         ScriptableRenderContext contextToUse = new ScriptableRenderContext();
@@ -198,6 +199,8 @@ public class TryCreateJoePipeline : MonoBehaviour
         //long startTime = DateTime.Now.ToFileTime();
         joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, false, false);
         //long endTime = DateTime.Now.ToFileTime();
+        string timeReporter = GlobalTimer.EndStopwatch(3);
+        Debug.Log("Time spent through frame generation and setting outside vars: " + timeReporter);
         float timeSpent = Time.deltaTime;
         //Debug.Log("Time for frame generation: " + (endTime - startTime));
         Debug.Log("Time spent: " + timeSpent);
