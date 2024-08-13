@@ -29,6 +29,7 @@ public class TryCreateJoePipeline : MonoBehaviour
 
     private BasicPipeInstance joePipeInstance = null;
     public bool onlyOnce = true;
+    public bool disableFoveatedRendering = false;
 
     //vars for creating diffs
     public RenderTexture[] pastTextureToRenderTo;
@@ -55,6 +56,10 @@ public class TryCreateJoePipeline : MonoBehaviour
     private float testFirstQualityOffsetRight = 90f;
     private float testSecondQualityOffsetRight = 90f;
     private float testThirdQualityOffsetRight = 90f;
+
+    //additional variables
+    private Vector3 pastCamPosition = new Vector3();
+    private Vector3 pastCamRotation = new Vector3();
 
     // Start is called before the first frame update
     void Start()
@@ -193,11 +198,25 @@ public class TryCreateJoePipeline : MonoBehaviour
             Graphics.Blit(textureToRenderTo[i], pastTextureToRenderTo[i]);
         }
 
-        joePipeInstance.setTAAWeight(TAAWeightFactor);
+        //determine TAA confidence
+        Transform cCamera = camerasToRenderTo[0].transform;
+        float TAAConfidence = 1;
+        TAAConfidence = Mathf.Min(TAAConfidence, 1 / Mathf.Abs(cCamera.position.x - pastCamPosition.x));
+        TAAConfidence = Mathf.Min(TAAConfidence, 1 / Mathf.Abs(cCamera.position.y - pastCamPosition.y));
+        TAAConfidence = Mathf.Min(TAAConfidence, 1 / Mathf.Abs(cCamera.position.z - pastCamPosition.z));
+        TAAConfidence = Mathf.Min(TAAConfidence, 1 / Mathf.Abs(cCamera.rotation.eulerAngles.x - pastCamRotation.x));
+        TAAConfidence = Mathf.Min(TAAConfidence, 1 / Mathf.Abs(cCamera.rotation.eulerAngles.y - pastCamRotation.y));
+        TAAConfidence = Mathf.Min(TAAConfidence, 1 / Mathf.Abs(cCamera.rotation.eulerAngles.z - pastCamRotation.z));
+        //now set previous position
+        pastCamPosition = cCamera.position;
+        pastCamRotation = cCamera.rotation.eulerAngles;
+
+
+        joePipeInstance.setTAAWeight(TAAWeightFactor * TAAConfidence);
         joePipeInstance.setMaxTAAFrames(MaxTAAFrame);
 
         //long startTime = DateTime.Now.ToFileTime();
-        joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, false, false);
+        joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, disableFoveatedRendering, false);
         //long endTime = DateTime.Now.ToFileTime();
         string timeReporter = GlobalTimer.EndStopwatch(3);
         Debug.Log("Time spent through frame generation and setting outside vars: " + timeReporter);

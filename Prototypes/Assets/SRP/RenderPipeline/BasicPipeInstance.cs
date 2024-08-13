@@ -85,6 +85,9 @@ namespace OpenRT
 
         //additional for if we need to only be rendering for one frame (currently commented out below)
         private bool onlyOnce = false;
+        //additional for not constantly reloading material buffer
+        private bool reloadMaterials = true;
+        private bool clearMaterials = false;
 
         public BasicPipeInstance(Color clearColor, ComputeShader mainShader, List<RenderPipelineConfigObject> allConfig, Material BlurMaterial)
         {
@@ -104,6 +107,12 @@ namespace OpenRT
 
             m_config = m_allConfig[0];
 
+        }
+
+        //tells us to reload the buffers for materials, call if something has changed
+        public void reloadMaterialsBuffers()
+        {
+            clearMaterials = true;
         }
 
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
@@ -154,9 +163,13 @@ namespace OpenRT
             timeElapsed = GlobalTimer.EndStopwatch(2);
             Debug.Log("Time to load geometry buffer is " + timeElapsed);
             GlobalTimer.StartStopwatch(2);
-            RunLoadMaterialToBuffer(computeBufferForMaterials,
-                                    sceneParseResult,
-                                    ref m_mainShader);
+            if (reloadMaterials)
+            {
+                RunLoadMaterialToBuffer(computeBufferForMaterials,
+                                        sceneParseResult,
+                                        ref m_mainShader);
+                reloadMaterials = false;
+            }
             timeElapsed = GlobalTimer.EndStopwatch(2);
             Debug.Log("Time to load material buffer is " + timeElapsed);
             GlobalTimer.StartStopwatch(2);
@@ -197,7 +210,7 @@ namespace OpenRT
                 RunSetBlurVariables(foveatedInfo, i);
                 timeElapsed = GlobalTimer.EndStopwatch(2);
                 Debug.Log("Time to load for " + camera.name + " is " + timeElapsed);
-                RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i]);
+                RunSendTextureToUnity(commands, m_target, renderContext, camera, texToWriteTo[i], runNoFoveation);
                 i++;
             }
 
@@ -237,6 +250,7 @@ namespace OpenRT
 
         private void RunSetFoveatedVariables(ShaderFoveatedInfo foveatedInfo, int camNumber)
         {
+
             m_mainShader.SetVector("_frustumVector", foveatedInfo._frustumVector[camNumber]);
             m_mainShader.SetVector("_viewVector", foveatedInfo._viewVector[camNumber]);
             //m_mainShader.SetFloat("_innerAngleMax", Mathf.Deg2Rad * foveatedInfo._innerAngleMax);
@@ -662,15 +676,19 @@ namespace OpenRT
             }
             computeBufferForLights.Clear();
 
-            foreach (var materialBuffers in computeBufferForMaterials)
+            if (clearMaterials)
             {
-                materialBuffers.Release();
+                foreach (var materialBuffers in computeBufferForMaterials)
+                {
+                    materialBuffers.Release();
+                }
+                computeBufferForMaterials.Clear();
+                reloadMaterials = true;
             }
-            computeBufferForMaterials.Clear();
         }
 
         private void RunSendTextureToUnity(CommandBuffer commands, RenderTexture targeTexture,
-            ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo)
+            ScriptableRenderContext renderContext, Camera camera, RenderTexture textureToWriteTo, bool runWithoutFoveation)
         {
             if (MEASURE_DISPATCH_TIME) {
                 //GlobalTimer.StartStopwatch();
@@ -684,30 +702,34 @@ namespace OpenRT
 
                 GlobalTimer.StartStopwatch();
             }
+            int threadGroupsX, threadGroupsY;
 
-            m_mainShader.SetInt("_runRes", 1);
-            int threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
-            int threadGroupsY = Mathf.CeilToInt(m_target.height / 8.0f);
-            //run once, this will create the full-res shared texture which is kept internally
-            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+            if (!runWithoutFoveation)
+            {
+                m_mainShader.SetInt("_runRes", 1);
+                threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
+                threadGroupsY = Mathf.CeilToInt(m_target.height / 8.0f);
+                //run once, this will create the full-res shared texture which is kept internally
+                m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
-            m_mainShader.SetInt("_runRes", 2);
-            threadGroupsX = Mathf.CeilToInt(m_target.width / 16.0f);
-            threadGroupsY = Mathf.CeilToInt(m_target.height / 16.0f);
-            //run once, this will create the half-res shared texture which is kept internally
-            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+                m_mainShader.SetInt("_runRes", 2);
+                threadGroupsX = Mathf.CeilToInt(m_target.width / 16.0f);
+                threadGroupsY = Mathf.CeilToInt(m_target.height / 16.0f);
+                //run once, this will create the half-res shared texture which is kept internally
+                m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
-            threadGroupsX = Mathf.CeilToInt(m_target.width / 32.0f);
-            threadGroupsY = Mathf.CeilToInt(m_target.height / 32.0f);
-            m_mainShader.SetInt("_runRes", 3);
-            //quarter
-            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+                threadGroupsX = Mathf.CeilToInt(m_target.width / 32.0f);
+                threadGroupsY = Mathf.CeilToInt(m_target.height / 32.0f);
+                m_mainShader.SetInt("_runRes", 3);
+                //quarter
+                m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
 
-            threadGroupsX = Mathf.CeilToInt(m_target.width / 64.0f);
-            threadGroupsY = Mathf.CeilToInt(m_target.height / 64.0f);
-            m_mainShader.SetInt("_runRes", 4);
-            //eigth
-            m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+                threadGroupsX = Mathf.CeilToInt(m_target.width / 64.0f);
+                threadGroupsY = Mathf.CeilToInt(m_target.height / 64.0f);
+                m_mainShader.SetInt("_runRes", 4);
+                //eigth
+                m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
+            }
 
 
             //now we can run foveated raytracer
