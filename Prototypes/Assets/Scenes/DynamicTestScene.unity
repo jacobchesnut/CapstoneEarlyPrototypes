@@ -569,11 +569,12 @@ MonoBehaviour:
   - {fileID: 1477830899}
   onlyOnce: 0
   disableFoveatedRendering: 0
+  disableRendering: 0
   pastTextureToRenderTo: []
   differenceTexture: {fileID: 0}
   differenceShader: {fileID: 7200000, guid: fdd78d1564f6922479223a6f6daf0b7b, type: 3}
   innerAngleMax: 15
-  showTint: 1
+  showTint: 0
   showOverlay: 1
   tintBorderSize: 1
   MaxTAAFrame: 4
@@ -2009,6 +2010,7 @@ MonoBehaviour:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 455045218}
   - {fileID: 148603962}
   - {fileID: 431629814}
   - {fileID: 755405648}
@@ -2017,6 +2019,5 @@ SceneRoots:
   - {fileID: 1171315447}
   - {fileID: 1700219346}
   - {fileID: 1060335382}
-  - {fileID: 455045218}
   - {fileID: 1169779411}
   - {fileID: 887457543}

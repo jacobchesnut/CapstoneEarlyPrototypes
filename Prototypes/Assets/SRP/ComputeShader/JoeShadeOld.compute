@@ -1,0 +1,238 @@
+﻿#pragma enable_d3d11_debug_symbols
+
+#include "DataStructure/RayFlag.compute"
+#include "Ray.compute"
+#include "RayHit.compute"
+#include "DataStructure/LightInfo.compute"
+#include "DataStructure/LightHit.compute"
+#include "DataStructure/SecRaysAtHit.compute"
+#include "Intersect/SphereIntersectUtils.compute"
+#include "Intersect/TriangleIntersectUtils.compute"
+#include "Primitive/Primitive.compute"
+#include "BVH/RTBoundingBox.compute"
+
+//test comment
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+
+// Camera
+float4 _CameraForward;
+float4x4 _CameraToWorld;
+float4x4 _CameraInverseProjection;
+float _CameraOrthographicSize;
+float4x4 _CameraLocalToWorld;
+
+// Ray Generation
+int _RayGenID;
+
+//Skybox
+Texture2D<float4> _SkyboxTexture;
+SamplerState sampler_SkyboxTexture;
+
+// Texture
+Texture2DArray _MatTexture;
+
+// Primitive
+int _NumOfPrimitive;
+StructuredBuffer<Primitive> _Primitives;
+StructuredBuffer<float4x4> _WorldToPrimitives;
+
+// BVH
+StructuredBuffer<RTBoundingBox> _BVHTree;
+
+// Light
+int _NumOfLights;
+StructuredBuffer<LightInfo> _Lights;
+
+// Ambient
+float3 _AmbientLightUpper;
+
+// Placeholder
+float3 missShader(float3 direction) {
+    // Sample the skybox and write it
+    float theta = acos(direction.y) / -3.14159265359f;
+    float phi = atan2(direction.x, -direction.z) / -3.14159265359f * 0.5f;
+    return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz;
+}
+
+#include "Intersect/IntersectShaderCollection.compute"
+
+#include "Light/CustomLights.compute"
+
+#include "Shading/CustomShaderCollection.compute"
+
+#include "Custom/RayGeneration/CustomRayGeneration.compute"
+
+#include "RayCasting/Trace.compute"
+
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// MAX_RAY_GENERATION = 4;
+// MAX_SECONDARY_RAYS_PER_GENERATION = 4;
+
+static const int MAX_RAY_GEN = 4;
+static const int MAX_RAY_PER_LEVEL = 2;
+
+int childRayOffset(int myLevel) 
+{
+    return (myLevel + 1) * MAX_RAY_PER_LEVEL;
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // Get the dimensions of the RenderTexture
+    uint width, height;
+    Result.GetDimensions(width, height);
+
+    uint numberOfRay = NumberOfRay(width, height, id, _RayGenID);
+
+    float4 finalColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    Ray _secondaryRayStack[MAX_RAY_GEN * MAX_RAY_PER_LEVEL];
+    int srSbilingAtEachLevel[MAX_RAY_GEN];
+    for (uint e = 0; e < MAX_RAY_GEN; e++)
+    {
+        srSbilingAtEachLevel[e] = -1;
+    }
+
+    [fastopt] for (uint i = 0; i < numberOfRay; i++) 
+    {
+        Ray ray = RayGeneration(width, height, id, _RayGenID, i);
+
+        // Trace
+        RayHit hit = Trace(ray);    // Exclude nothing
+
+        float3 result;
+        if (hit.primitiveId == -1) 
+        {
+            // Miss Shader
+            result = missShader(ray.direction);
+        } 
+        else 
+        {
+            // -
+            
+            int srLevel = -1;
+            float3 secRayCombinedColor = float3(0, 0, 0);
+            
+            // TODO: Refactor this to avoid special case for primary ray
+            SecRaysAtHit secRaysAtHit = CreateSecRaysAtHit();   // TODO: Optimization: Avoid initialize the internal Ray array
+            SecRays(ray, hit, secRaysAtHit);
+            
+            // Check if there is secondary rays
+            if (secRaysAtHit.srays[0].tmin > -1 * 1.#INF) 
+            {
+                srLevel = srLevel + 1;
+                srSbilingAtEachLevel[0] = 0;
+                for (int j = 0; j < MAX_RAY_PER_LEVEL; j++) 
+                {
+                    _secondaryRayStack[srLevel * MAX_RAY_PER_LEVEL + j] = secRaysAtHit.srays[j];  // Copy to secondary rays stack
+                }
+
+                [fastopt] while (srLevel > -1)
+                {
+                    if (srSbilingAtEachLevel[srLevel] < MAX_RAY_PER_LEVEL)
+                    {
+                        int secRayIndex = srLevel * MAX_RAY_PER_LEVEL + srSbilingAtEachLevel[srLevel];
+                        if (srLevel < (MAX_RAY_GEN - 1))
+                        {
+                            if (srSbilingAtEachLevel[srLevel + 1] < 0) 
+                            {
+                                RayHit secHit = Trace(_secondaryRayStack[secRayIndex]);
+                                // -
+                                if (secHit.primitiveId == -1)
+                                {
+                                    _secondaryRayStack[secRayIndex].color = missShader(_secondaryRayStack[secRayIndex].direction);
+                                    // Move to sibling
+                                    srSbilingAtEachLevel[srLevel] = srSbilingAtEachLevel[srLevel] + 1;
+                                }
+                                else
+                                {
+                                    SecRaysAtHit _hit = CreateSecRaysAtHit();   // TODO: Optimization: Avoid initialize the internal Ray array
+                                    SecRays(_secondaryRayStack[secRayIndex], secHit, _hit);
+                                    for (int i = 0; i < MAX_RAY_PER_LEVEL; i++) 
+                                    {
+                                        _secondaryRayStack[childRayOffset(srLevel) + i] = _hit.srays[i];  // Copy to secondary rays stack
+                                    }
+                                    // Move to children
+                                    srLevel = srLevel + 1;
+                                    srSbilingAtEachLevel[srLevel] = 0; // Start from the first index of my children
+                                }
+                            }
+                            else
+                            {
+                                // Back from children. Calculate the ray color from children rays
+                                srSbilingAtEachLevel[srLevel + 1] = -1;
+                                float3 children = float3(0, 0, 0);
+                                for (int c = 0; c < MAX_RAY_PER_LEVEL; c++) 
+                                {
+                                    children = children + _secondaryRayStack[childRayOffset(srLevel) + c].color * _secondaryRayStack[childRayOffset(srLevel) + c].weight;
+                                }
+                                RayHit secHit = Trace(_secondaryRayStack[secRayIndex]); //TODO: Optimization. Avoid doing trace again.
+                                // -
+                                _secondaryRayStack[secRayIndex].color = ClosestHit(
+                                                                        _secondaryRayStack[secRayIndex],
+                                                                        secHit,
+                                                                        _AmbientLightUpper,
+                                                                        children
+                                                                    );
+                                // Move to sibling
+                                srSbilingAtEachLevel[srLevel] = srSbilingAtEachLevel[srLevel] + 1;
+                            }
+                        }
+                        else
+                        {
+                            // The deepest iteration. We only allow ray-scene intersection. No more secondary ray spawning.
+                            RayHit secHit = Trace(_secondaryRayStack[secRayIndex]);
+                            // -
+                            if (secHit.primitiveId == -1)
+                            {
+                                _secondaryRayStack[secRayIndex].color = missShader(_secondaryRayStack[secRayIndex].direction);
+                            }
+                            else
+                            {
+                                _secondaryRayStack[secRayIndex].color = ClosestHit(
+                                                                        _secondaryRayStack[secRayIndex],
+                                                                        secHit,
+                                                                        _AmbientLightUpper,
+                                                                        float3(0, 0, 0) // No more secondary hit
+                                                                    );
+                            }
+                            
+                            // Move to sibling
+                            srSbilingAtEachLevel[srLevel] = srSbilingAtEachLevel[srLevel] + 1;
+                        }
+                    }
+                    else
+                    {
+                        // Finish iterating this level. Fallback to parent.
+                        srLevel = srLevel - 1;
+                    }
+                }
+                srSbilingAtEachLevel[0] = -1;
+
+                for (int c = 0; c < MAX_RAY_PER_LEVEL; c++) 
+                {
+                    secRayCombinedColor = secRayCombinedColor + _secondaryRayStack[c].color * _secondaryRayStack[c].weight;
+                }
+            }
+
+            // Closet Hit Shader
+            result = ClosestHit(
+                ray,
+                hit,
+                _AmbientLightUpper,
+                secRayCombinedColor
+            );
+        }
+            
+        finalColor += float4(result, 1) / numberOfRay;
+    }
+    
+    Result[id.xy] = finalColor;
+}

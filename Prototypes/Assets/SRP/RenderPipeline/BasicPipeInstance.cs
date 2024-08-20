@@ -89,6 +89,8 @@ namespace OpenRT
         private bool reloadMaterials = true;
         private bool clearMaterials = false;
 
+        private bool disableRendering = false;
+
         public BasicPipeInstance(Color clearColor, ComputeShader mainShader, List<RenderPipelineConfigObject> allConfig, Material BlurMaterial)
         {
             m_clearColor = clearColor;
@@ -138,6 +140,8 @@ namespace OpenRT
             onlyOnce = pPressed;
             m_mainShader.SetBool("_runNoFoveated", runNoFoveation);
             m_mainShader.SetBool("_onlyOneSample", runOnlyOneSample);
+
+            disableRendering = foveatedInfo._DisableRendering;
             
 
 
@@ -237,7 +241,7 @@ namespace OpenRT
             m_blurMaterial.SetFloat("_heightPix", TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT);
             m_blurMaterial.SetVector("_frustumVector", foveatedInfo._frustumVector[camNumber]);
             m_blurMaterial.SetVector("_viewVector", foveatedInfo._viewVector[camNumber]);
-            if(camNumber== 0)
+            if(camNumber == 0)
             {
                 m_blurMaterial.SetFloat("_offsetAngleX", -11f); //assume left eye
             }
@@ -702,9 +706,13 @@ namespace OpenRT
 
                 GlobalTimer.StartStopwatch();
             }
+
+            //start timer for beginning of rendering until start of next frame
+            GlobalTimer.endOnFrameStart.Start();
+
             int threadGroupsX, threadGroupsY;
 
-            if (!runWithoutFoveation)
+            if (!runWithoutFoveation && !disableRendering)
             {
                 m_mainShader.SetInt("_runRes", 1);
                 threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
@@ -738,12 +746,11 @@ namespace OpenRT
             //directly dispatch compute shader and blit to outside texture
             threadGroupsX = Mathf.CeilToInt(m_target.width / 8.0f);
             threadGroupsY = Mathf.CeilToInt(m_target.height / 8.0f);
-            //if (onlyOnce)
-            //{
-                //onlyOnce = false;
-                //Debug.Log("in dispatch");
+
+            if (!disableRendering)
+            {
                 m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
-            //}
+            }
             
 
             //additional setup for post process blur, while blit to final:

@@ -4872,6 +4872,7 @@ MonoBehaviour:
   - {fileID: 1221255283}
   onlyOnce: 0
   disableFoveatedRendering: 0
+  disableRendering: 0
   pastTextureToRenderTo: []
   differenceTexture: {fileID: 0}
   differenceShader: {fileID: 7200000, guid: fdd78d1564f6922479223a6f6daf0b7b, type: 3}

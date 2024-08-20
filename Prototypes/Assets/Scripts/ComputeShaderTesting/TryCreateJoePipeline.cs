@@ -30,6 +30,7 @@ public class TryCreateJoePipeline : MonoBehaviour
     private BasicPipeInstance joePipeInstance = null;
     public bool onlyOnce = true;
     public bool disableFoveatedRendering = false;
+    public bool disableRendering = false;
 
     //vars for creating diffs
     public RenderTexture[] pastTextureToRenderTo;
@@ -89,6 +90,16 @@ public class TryCreateJoePipeline : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //this is roughly the start of a frame
+        //here instead of global timer in order to avoid having a single instance of global timer in scene
+        if (GlobalTimer.endOnFrameStart.IsRunning)
+        {
+            GlobalTimer.endOnFrameStart.Stop();
+            UnityEngine.Debug.Log("time to frame end: " + GlobalTimer.endOnFrameStart.Elapsed);
+            GlobalTimer.endOnFrameStart.Reset();
+        }
+
+
         if (Input.GetKeyDown(KeyCode.P))
         {
             onlyOnce = true;
@@ -145,6 +156,7 @@ public class TryCreateJoePipeline : MonoBehaviour
 
         //send foveated information to pipeline through struct
         ShaderFoveatedInfo infoToSend = new ShaderFoveatedInfo();
+        infoToSend._DisableRendering = disableRendering;
         //set camera frustum info
         CameraInfoReporter camInfo;
         infoToSend._frustumVector = new Vector4[camerasToRenderTo.Length];   //(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0);
@@ -337,4 +349,5 @@ public struct ShaderFoveatedInfo
     public float _FirstQualityOffsetRight;
     public float _SecondQualityOffsetRight;
     public float _ThirdQualityOffsetRight;
+    public bool _DisableRendering;
 }

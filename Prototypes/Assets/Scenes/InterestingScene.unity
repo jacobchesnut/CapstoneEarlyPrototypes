@@ -2290,7 +2290,8 @@ MonoBehaviour:
   - {fileID: 1152835013}
   - {fileID: 1477830899}
   onlyOnce: 0
-  disableFoveatedRendering: 1
+  disableFoveatedRendering: 0
+  disableRendering: 0
   pastTextureToRenderTo: []
   differenceTexture: {fileID: 0}
   differenceShader: {fileID: 7200000, guid: fdd78d1564f6922479223a6f6daf0b7b, type: 3}
@@ -5662,7 +5663,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1060335381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5677,7 +5678,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lightIndex: 0
   shaderGUID: 5a7e6178-ac2d-4824-9dad-f560a6074d72
-  color: {r: 1, g: 1, b: 1, a: 1}
+  color: {r: 0, g: 0, b: 0, a: 1}
 --- !u!4 &1060335382
 Transform:
   m_ObjectHideFlags: 0
