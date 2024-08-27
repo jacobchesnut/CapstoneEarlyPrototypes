@@ -14,7 +14,7 @@ namespace OpenRT
     {
         private const bool DEBUG_MEASURE_TIME = true;
 
-        private bool firstTime = true;
+        public bool reloadGeom = true;
 
         private static SceneParser _sharedInstance = new SceneParser();
 
@@ -32,6 +32,7 @@ namespace OpenRT
             public int r_intersectIndex;
             public RTMaterial r_material;
             public RTBoundingBox r_box;
+            public int r_boxIndex;
             public int r_assignedPrimitiveID;
             public int r_geoOffset;
             public int r_mapOffset;
@@ -125,16 +126,16 @@ namespace OpenRT
             GameObject[] roots = scene.GetRootGameObjects();
 
             timer.Start();
-            //if (firstTime)
-            //{
-            //    ParseGeometry(roots,
-            //                  ref sceneParseResult);
-            //    firstTime = false;
-            //}
-            //else
-            //{
+            if (reloadGeom)
+            {
+                ParseGeometry(roots,
+                              ref sceneParseResult);
+                reloadGeom = false;
+            }
+            else
+            {
                 ParseDirtyGeometry(roots, ref sceneParseResult);
-            //}
+            }
             timer.Stop();
             if (DEBUG_MEASURE_TIME)
             {
@@ -302,13 +303,13 @@ namespace OpenRT
                 RenderConnector oldConnection = new RenderConnector(); //cannot be null
                 bool foundMatch = false;
                 //find old connection
-                UnityEngine.Debug.LogWarning("Testing renderer " + renderer.gameObject.name);
+                //UnityEngine.Debug.LogWarning("Testing renderer " + renderer.gameObject.name);
                 foreach(RenderConnector connection in connections)
                 {
-                    UnityEngine.Debug.LogWarning("Testing connecting renderer " + connection.r_renderer.gameObject.name);
+                    //UnityEngine.Debug.LogWarning("Testing connecting renderer " + connection.r_renderer.gameObject.name);
                     if (renderer.gameObject == connection.r_renderer.gameObject)
                     {
-                        UnityEngine.Debug.LogWarning("found match");
+                        //UnityEngine.Debug.LogWarning("found match");
                         oldConnection = connection;
                         foundMatch = true;
                         break;
@@ -379,9 +380,12 @@ namespace OpenRT
                         oldConnection.r_dataOffset
                     );
 
-                    sceneParseResult.RemoveTopLevelBVH(oldConnection);
+                    //sceneParseResult.RemoveTopLevelBVH(oldConnection);
                     var boxOfThisObject = renderer.geometry.GetTopLevelBoundingBox(assginedPrimitiveId: oldConnection.r_assignedPrimitiveID);
-                    sceneParseResult.AddBoundingBox(boxOfThisObject);
+                    sceneParseResult.ModBoundingBox(boxOfThisObject, oldConnection.r_boxIndex);
+                    //sceneParseResult.RemoveBoundingBox(oldConnection.r_boxIndex);
+                    //oldConnection.r_boxIndex = sceneParseResult.AddBoundingBox(boxOfThisObject);
+                    //sceneParseResult.AddBoundingBox(boxOfThisObject);
                     oldConnection.r_box = boxOfThisObject;
 
                     continue;
@@ -499,7 +503,7 @@ namespace OpenRT
 
 
                     var boxOfThisObject = renderer.geometry.GetTopLevelBoundingBox(assginedPrimitiveId: sceneParseResult.Primitives.Count - 1);
-                    sceneParseResult.AddBoundingBox(boxOfThisObject);
+                    oldConnection.r_boxIndex = sceneParseResult.AddBoundingBox(boxOfThisObject);
                     newConnection.r_box = boxOfThisObject;
                     newConnection.r_assignedPrimitiveID = sceneParseResult.Primitives.Count - 1;
                     connections.Add(newConnection);

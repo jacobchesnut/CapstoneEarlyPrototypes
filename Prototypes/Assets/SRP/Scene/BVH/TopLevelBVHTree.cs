@@ -21,10 +21,18 @@ namespace OpenRT
         private List<RTBoundingBox> m_boxes = new List<RTBoundingBox>();
         private BVHNode m_root;
 
-        public void AddBoundingBox(RTBoundingBox box)
+        public int AddBoundingBox(RTBoundingBox box)
         {
             m_boxes.Add(box);
+            //Debug.LogWarning("RTBox added, size at: " + m_boxes.Count + ", and index is: " + m_boxes.IndexOf(box));
+            return m_boxes.IndexOf(box);
         }
+
+        public void ModBoundingBox(RTBoundingBox box, int boxID)
+        {
+            m_boxes[boxID] = box;
+        }
+
 
         // Debug
         public List<RTBoundingBox> AllBoundingBoxes
@@ -123,9 +131,9 @@ namespace OpenRT
             m_boxes.Clear();
         }
 
-        public void RemoveBoundingBox(RTBoundingBox box)
+        public void RemoveBoundingBox(int box)
         {
-            m_boxes.Remove(box);
+            m_boxes.RemoveAt(box);
         }
 
         private Vector3 CuttingPlane(List<RTBoundingBox> boxes)

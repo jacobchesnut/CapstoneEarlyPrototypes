@@ -75,9 +75,19 @@ namespace OpenRT
             m_objectLevelAccelerationStructureGeometryMappingCursor = new SortedList<ISIdx, int>();
         }
 
-        public void AddBoundingBox(RTBoundingBox box)
+        public int AddBoundingBox(RTBoundingBox box)
         {
-            topLevelBVH.AddBoundingBox(box);
+            return(topLevelBVH.AddBoundingBox(box));
+        }
+
+        public void ModBoundingBox(RTBoundingBox box, int boxID)
+        {
+            topLevelBVH.ModBoundingBox(box, boxID);
+        }
+
+        public void RemoveBoundingBox(int box)
+        {
+            topLevelBVH.RemoveBoundingBox(box);
         }
 
         public int AddGeometryCount(int count, int intersectIndex)
@@ -471,7 +481,7 @@ namespace OpenRT
 
         public void RemoveTopLevelBVH(SceneParser.RenderConnector toRemove)
         {
-            topLevelBVH.RemoveBoundingBox(toRemove.r_box);
+            //topLevelBVH.RemoveBoundingBox(toRemove.r_box);
         }
 
         public void ClearAllGeometries()

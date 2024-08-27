@@ -62,6 +62,9 @@ public class TryCreateJoePipeline : MonoBehaviour
     private Vector3 pastCamPosition = new Vector3();
     private Vector3 pastCamRotation = new Vector3();
 
+    //for coroutine
+    private IEnumerator endOfFrameCoroutine;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -85,6 +88,24 @@ public class TryCreateJoePipeline : MonoBehaviour
         //textureToRenderTo = new RenderTexture(Screen.width, Screen.height, 0); //currently screen width and height, will need pixel counts for VR camera
 
         readCalibrationInfo();
+
+        endOfFrameCoroutine = TimeEndOfFrame();
+        StartCoroutine(endOfFrameCoroutine);
+    }
+
+    private IEnumerator TimeEndOfFrame()
+    {
+        while (true)
+        {
+            yield return new WaitForEndOfFrame();
+            if (GlobalTimer.endOnFrameStart.IsRunning)
+            {
+                GlobalTimer.endOnFrameStart.Stop();
+                UnityEngine.Debug.Log("time to frame end: " + GlobalTimer.endOnFrameStart.Elapsed);
+                ExcelLogHandler.endFrameTimes.Add(GlobalTimer.endOnFrameStart.Elapsed.TotalMilliseconds);
+                GlobalTimer.endOnFrameStart.Reset();
+            }
+        }
     }
 
     // Update is called once per frame
@@ -92,12 +113,7 @@ public class TryCreateJoePipeline : MonoBehaviour
     {
         //this is roughly the start of a frame
         //here instead of global timer in order to avoid having a single instance of global timer in scene
-        if (GlobalTimer.endOnFrameStart.IsRunning)
-        {
-            GlobalTimer.endOnFrameStart.Stop();
-            UnityEngine.Debug.Log("time to frame end: " + GlobalTimer.endOnFrameStart.Elapsed);
-            GlobalTimer.endOnFrameStart.Reset();
-        }
+        
 
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -329,6 +345,11 @@ public class TryCreateJoePipeline : MonoBehaviour
         int threadGroupsY = Mathf.CeilToInt(differenceTexture.height / 8.0f);
 
         differenceShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
+    }
+
+    public void ReloadGeometry()
+    {
+        joePipeInstance.ReloadGeometry();
     }
 }
 

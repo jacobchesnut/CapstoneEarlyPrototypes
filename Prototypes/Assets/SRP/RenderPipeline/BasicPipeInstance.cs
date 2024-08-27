@@ -310,6 +310,11 @@ namespace OpenRT
             sceneParseResult = SceneParser.Instance.ParseScene(scene);
         }
 
+        public void ReloadGeometry()
+        {
+            SceneParser.Instance.reloadGeom = true;
+        }
+
         private void RunSetMissShader(ComputeShader shader, RenderPipelineConfigObject m_config)
         {
             shader.SetTexture(kIndex, "_SkyboxTexture", m_config.skybox);
