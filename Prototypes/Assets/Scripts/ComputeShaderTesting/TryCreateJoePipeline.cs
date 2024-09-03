@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using System.Diagnostics;
 
 public class TryCreateJoePipeline : MonoBehaviour
 {
@@ -91,6 +92,13 @@ public class TryCreateJoePipeline : MonoBehaviour
 
         endOfFrameCoroutine = TimeEndOfFrame();
         StartCoroutine(endOfFrameCoroutine);
+
+
+        //use to test accuracy of stopwatch
+        //long frequency = Stopwatch.Frequency;
+        //UnityEngine.Debug.LogWarning("Timer frequency in ticks per second = " + frequency);
+        //long nanosecPerTick = (1000L * 1000L * 1000L) / frequency;
+        //UnityEngine.Debug.LogWarning("Timer is accurate within " + nanosecPerTick + "nanoseconds");
     }
 
     private IEnumerator TimeEndOfFrame()
@@ -98,13 +106,13 @@ public class TryCreateJoePipeline : MonoBehaviour
         while (true)
         {
             yield return new WaitForEndOfFrame();
-            if (GlobalTimer.endOnFrameStart.IsRunning)
+            /*if (GlobalTimer.endOnFrameStart.IsRunning)
             {
                 GlobalTimer.endOnFrameStart.Stop();
                 UnityEngine.Debug.Log("time to frame end: " + GlobalTimer.endOnFrameStart.Elapsed);
                 ExcelLogHandler.endFrameTimes.Add(GlobalTimer.endOnFrameStart.Elapsed.TotalMilliseconds);
                 GlobalTimer.endOnFrameStart.Reset();
-            }
+            }*/ //not doing it here anymore because it doesn't seem like unity actually blocks for GPU yet
         }
     }
 
@@ -113,7 +121,13 @@ public class TryCreateJoePipeline : MonoBehaviour
     {
         //this is roughly the start of a frame
         //here instead of global timer in order to avoid having a single instance of global timer in scene
-        
+        if (GlobalTimer.endOnFrameStart.IsRunning)
+        {
+            GlobalTimer.endOnFrameStart.Stop();
+            UnityEngine.Debug.Log("time to frame end: " + GlobalTimer.endOnFrameStart.Elapsed);
+            ExcelLogHandler.endFrameTimes.Add(GlobalTimer.endOnFrameStart.Elapsed.TotalMilliseconds);
+            GlobalTimer.endOnFrameStart.Reset();
+        }
 
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -247,10 +261,10 @@ public class TryCreateJoePipeline : MonoBehaviour
         joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, disableFoveatedRendering, false);
         //long endTime = DateTime.Now.ToFileTime();
         string timeReporter = GlobalTimer.EndStopwatch(3);
-        Debug.Log("Time spent through frame generation and setting outside vars: " + timeReporter);
+        UnityEngine.Debug.Log("Time spent through frame generation and setting outside vars: " + timeReporter);
         float timeSpent = Time.deltaTime;
         //Debug.Log("Time for frame generation: " + (endTime - startTime));
-        Debug.Log("Time spent: " + timeSpent);
+        UnityEngine.Debug.Log("Time spent: " + timeSpent);
 
         //if (Input.GetKeyDown(KeyCode.P)) << has to be done in update
         if (onlyOnce)
