@@ -66,6 +66,9 @@ public class TryCreateJoePipeline : MonoBehaviour
     //for coroutine
     private IEnumerator endOfFrameCoroutine;
 
+    //for timing
+    private Stopwatch fullFrameStopwatch = new Stopwatch();
+
     // Start is called before the first frame update
     void Start()
     {
@@ -128,6 +131,17 @@ public class TryCreateJoePipeline : MonoBehaviour
             ExcelLogHandler.endFrameTimes.Add(GlobalTimer.endOnFrameStart.Elapsed.TotalMilliseconds);
             GlobalTimer.endOnFrameStart.Reset();
         }
+
+        //also start timing for end of frame
+        if (fullFrameStopwatch.IsRunning)
+        {
+            fullFrameStopwatch.Stop();
+            UnityEngine.Debug.Log("time for total frame: " + fullFrameStopwatch.Elapsed);
+            UnityEngine.Debug.Log("time difference between elapsed and time delta time: " + (fullFrameStopwatch.Elapsed.TotalMilliseconds - (Time.deltaTime * 1000)));
+            ExcelLogHandler.totalFrameTimes.Add(fullFrameStopwatch.Elapsed.TotalMilliseconds);
+            fullFrameStopwatch.Reset();
+        }
+        fullFrameStopwatch.Start();//start here to measure the full frame
 
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -364,6 +378,11 @@ public class TryCreateJoePipeline : MonoBehaviour
     public void ReloadGeometry()
     {
         joePipeInstance.ReloadGeometry();
+    }
+
+    public void ReloadMaterials()
+    {
+        joePipeInstance.reloadMaterialsBuffers();
     }
 }
 

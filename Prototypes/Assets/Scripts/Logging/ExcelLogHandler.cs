@@ -32,7 +32,7 @@ public class ExcelLogHandler : MonoBehaviour
     void Update()
     {
         //capture frame time
-        totalFrameTimes.Add(Time.deltaTime * 1000); //time in ms
+        //totalFrameTimes.Add(Time.deltaTime * 1000); //time in ms
 
         framesPassed++;
         

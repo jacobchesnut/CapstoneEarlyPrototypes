@@ -43,14 +43,13 @@ public class StressTestSpawner : MonoBehaviour
                 while (numberRobotsInScene > spawnedRobots.Count)
                 {
                     spawnedRobots.Add(Instantiate(robotPrefab, new Vector3(-1, 2, 4), Random.rotation));
-                    //pipeline.ReloadGeometry(); << thought this might fix material bug, does not, robots do not get texture
+                    pipeline.ReloadMaterials();
                 }
                 while (numberRobotsInScene < spawnedRobots.Count)
                 {
                     randomRobot = spawnedRobots[0];
                     Destroy(randomRobot);
                     spawnedRobots.RemoveAt(0);
-                    //pipeline.ReloadGeometry();
                 }
             }
             else
@@ -59,7 +58,7 @@ public class StressTestSpawner : MonoBehaviour
                 {
                     numberFramesSpawned++;
                     spawnedRobots.Add(Instantiate(robotPrefab, new Vector3(Random.value * spawnBoxSize / 2, Random.value * spawnBoxSize, Random.value * spawnBoxSize * 2), Random.rotation));
-                    //pipeline.ReloadGeometry();
+                    pipeline.ReloadMaterials();
                 }
             }
         }
@@ -68,12 +67,14 @@ public class StressTestSpawner : MonoBehaviour
             if(numFramesPassed % framesForPeriodicIncrease == 0 && timesAdding < targetNumRobots)
             {
                 spawnedRobots.Add(Instantiate(robotPrefab, new Vector3(-1, 1, 4), Random.rotation));
+                pipeline.ReloadMaterials();
             }
         }
 
         if(increaseLightsPeriodic && numFramesPassed % framesForPeriodicIncrease == 0 && timesAdding < targetNumLights)
         {
             spawnedLights.Add(Instantiate(lightPrefab, new Vector3(0, 1, 0), Quaternion.identity));
+            pipeline.ReloadMaterials();
         }
 
         if (increaseSamplesPeriodic && numFramesPassed % framesForPeriodicIncrease == 0 && timesAdding < targetNumSamples)
