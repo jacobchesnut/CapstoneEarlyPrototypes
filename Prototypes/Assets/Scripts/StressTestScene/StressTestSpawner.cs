@@ -11,6 +11,7 @@ public class StressTestSpawner : MonoBehaviour
     public int numberRobotsInScene = 0;
     private int numberFramesSpawned = 0;
     public float spawnBoxSize = 5f;
+    public Vector3 spawnOffset = Vector3.zero;
     public TryCreateJoePipeline pipeline = null;
     public bool onePerFrame = false; //makes one robot each frame, until 100 robots
     public int numberRobotsToSpawn = 20;
@@ -66,7 +67,7 @@ public class StressTestSpawner : MonoBehaviour
         {
             if(numFramesPassed % framesForPeriodicIncrease == 0 && timesAdding < targetNumRobots)
             {
-                spawnedRobots.Add(Instantiate(robotPrefab, new Vector3(-1, 1, 4), Random.rotation));
+                spawnedRobots.Add(Instantiate(robotPrefab, (new Vector3(Random.value * spawnBoxSize * 2, Random.value * spawnBoxSize / 5, Random.value * spawnBoxSize / 2)) + spawnOffset, Random.rotation));
                 pipeline.ReloadMaterials();
             }
         }

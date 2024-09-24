@@ -65,6 +65,7 @@ bool _runNoFoveated; //tells the shader to make the frame without using foveated
 bool _onlyOneSample; //tells the shader to ignore the number of samples to use
 bool _showTint; //should we tint based on region
 bool _showOverlay; //should we show the overlay
+bool _UseTAAObjectID;
 static const float _overlaySize = 0.005f; //size of overlay in angle
 float _debugRegionBorderSize;
 RWTexture2DArray<float4> _LowResTexture;
@@ -72,6 +73,8 @@ int _temporalFramePosition; //which frame to write to for TAA
 int _totalNoTAAFrames; //the total number of TAA frames being used
 float _weightDecreaseFactor; //rate at which weight of previous frames decreases
 RWTexture2DArray<float4> _PastTexture; //past frame data for TAA
+//TAA frames are on odd numbers ((_temporalFramePosition * 2) + 1), object ids are on even numbers (2*_temporalFramePosition)
+
 //RWTexture2D<float4> HalfRes; //half resolution texture for ray sharing
 //RWTexture2D<float4> QuarterRes; //quarter resolution texture for ray sharing
 //RWTexture2D<float4> EighthRes; //eighth resolution texture for ray sharing
@@ -424,6 +427,32 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 }
             }
         }
+
+        //set primitiveId for TAA
+        int numHighResPixels = 0;
+        if(_runRes == 1){
+            numHighResPixels = 1;
+        }
+        if(_runRes == 2){
+            numHighResPixels = 2;
+        }
+        if(_runRes == 3){
+            numHighResPixels = 4;
+        }
+        if(_runRes == 4){
+            numHighResPixels = 8;
+        }
+
+        if(_UseTAAObjectID){
+            for(int i = 0; i < numHighResPixels; i++){
+                for(int j = 0; j < numHighResPixels; j++){
+                    _PastTexture[int3((finalXY.x * numHighResPixels) + i, (finalXY.y * numHighResPixels) + j, _temporalFramePosition * 2)] = float4(0,0,0,hit.primitiveId);
+                }
+            }
+        }
+        
+
+
     }
     //add shared Ray
     if(!(_runRes > 0) && !_runNoFoveated){
@@ -479,7 +508,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         _LowResTexture[int3(finalXY.x, finalXY.y, 3)] = finalColor;
     }
 
-    _PastTexture[int3(finalXY.x, finalXY.y, _temporalFramePosition)] = finalColor; //write to TAA array before doing TAA
+    //_PastTexture[int3(finalXY.x, finalXY.y, _temporalFramePosition)] = finalColor;
+    _PastTexture[int3(finalXY.x, finalXY.y, (_temporalFramePosition * 2) + 1)] = finalColor; //write to TAA array before doing TAA
 
     //run TAA
     //
@@ -498,7 +528,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 //we are no longer interested in frames beyond this point.
                 break;
             }
-            finalColor += (_PastTexture[int3(finalXY.x, finalXY.y, currentFrame)] * currentWeight);
+            if(_PastTexture[int3(finalXY.x, finalXY.y, currentFrame * 2)].a == _PastTexture[int3(finalXY.x, finalXY.y, _temporalFramePosition * 2)].a || !_UseTAAObjectID){
+                finalColor += (_PastTexture[int3(finalXY.x, finalXY.y, (currentFrame*2)+1)] * currentWeight); //if we hit the same object, use the TAA data
+            }
+            else{
+                finalColor += (_PastTexture[int3(finalXY.x, finalXY.y, (_temporalFramePosition*2)+1)] * currentWeight); //otherwise, substitute with current frame
+            }
             totalWeight += currentWeight;
         }
         finalColor /= totalWeight;

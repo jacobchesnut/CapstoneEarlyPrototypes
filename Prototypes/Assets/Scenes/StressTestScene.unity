@@ -310,14 +310,15 @@ MonoBehaviour:
   lightPrefab: {fileID: 1700219344}
   numberRobotsInScene: 0
   spawnBoxSize: 5
+  spawnOffset: {x: -5, y: 1, z: 4}
   pipeline: {fileID: 455045219}
   onePerFrame: 0
   numberRobotsToSpawn: 20
   framesForPeriodicIncrease: 400
-  increaseRobotsPeriodic: 1
-  targetNumRobots: 99
+  increaseRobotsPeriodic: 0
+  targetNumRobots: 19
   increaseLightsPeriodic: 0
-  targetNumLights: 100
+  targetNumLights: 19
   increaseSamplesPeriodic: 0
   targetNumSamples: 7
 --- !u!4 &90831277
@@ -2102,6 +2103,7 @@ MonoBehaviour:
   - {fileID: 1152835013}
   - {fileID: 1477830899}
   onlyOnce: 0
+  reduceObjectGhosting: 0
   disableFoveatedRendering: 0
   disableRendering: 0
   pastTextureToRenderTo: []
@@ -2111,7 +2113,7 @@ MonoBehaviour:
   showTint: 0
   showOverlay: 1
   tintBorderSize: 1
-  MaxTAAFrame: 1
+  MaxTAAFrame: 4
   TAAWeightFactor: 1
   BlurMaterial: {fileID: 2100000, guid: 4a440cd8c1a55fa428b8677c9b196bbe, type: 2}
 --- !u!20 &455045220
@@ -2717,7 +2719,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1649218382573798814, guid: 320b1c2af77554f99a1658df4a6d3d5c, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -927199367670048503, guid: 320b1c2af77554f99a1658df4a6d3d5c, type: 3}
       propertyPath: m_Name
@@ -5983,6 +5985,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   framesToCapture: 100
   avgFramesToCapture: 4
+  testsUntilFullPrintout: 20
 --- !u!4 &1890450140
 Transform:
   m_ObjectHideFlags: 0

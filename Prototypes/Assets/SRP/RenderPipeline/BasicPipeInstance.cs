@@ -140,9 +140,9 @@ namespace OpenRT
             onlyOnce = pPressed;
             m_mainShader.SetBool("_runNoFoveated", runNoFoveation);
             m_mainShader.SetBool("_onlyOneSample", runOnlyOneSample);
+            m_mainShader.SetBool("_UseTAAObjectID", foveatedInfo._UseTAAObjectID);
 
             disableRendering = foveatedInfo._DisableRendering;
-            
 
 
             if (m_mainShader == null)
@@ -362,7 +362,7 @@ namespace OpenRT
                 lowResTextures.Create();
 
             }
-            if(TAATextures == null || TAATextures[0].volumeDepth != m_MaxTAAFrame)
+            if(TAATextures == null || TAATextures[0].volumeDepth / 2 != m_MaxTAAFrame)
             {
                 if(TAATextures != null)
                 {
@@ -378,7 +378,7 @@ namespace OpenRT
                     TAATextures[i] = new RenderTexture(TryCreateJoePipeline.RENDER_TEXTURE_WIDTH, TryCreateJoePipeline.RENDER_TEXTURE_HEIGHT, 32,
                     RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
                     TAATextures[i].enableRandomWrite = true;
-                    TAATextures[i].volumeDepth = m_MaxTAAFrame;
+                    TAATextures[i].volumeDepth = m_MaxTAAFrame * 2; //2X TAA frames to hold object ID data
                     TAATextures[i].dimension = TextureDimension.Tex2DArray;
                     TAATextures[i].Create();
                 }

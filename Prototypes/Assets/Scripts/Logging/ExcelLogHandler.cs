@@ -22,6 +22,7 @@ public class ExcelLogHandler : MonoBehaviour
     private int framesPassed = 0;
     public int framesToCapture = 100;
     public int avgFramesToCapture = 4;
+    public int testsUntilFullPrintout = 20;
     // Start is called before the first frame update
     void Start()
     {
@@ -77,6 +78,11 @@ public class ExcelLogHandler : MonoBehaviour
             printOutFrameTimes(averageTotalFrameTimes, "AverageTotalFrameTimes");
             averageTotalFrameTimes.Clear();
         }
+
+        if(averageTotalFrameTimes.Count >= testsUntilFullPrintout)
+        {
+            printOutFull("FullPrint");
+        }
     }
 
     /*
@@ -104,5 +110,13 @@ public class ExcelLogHandler : MonoBehaviour
         StreamWriter outputFile = new StreamWriter("C:\\Users\\jakee\\CapstoneShared\\" + fileName + ".txt", true);
         outputFile.WriteLine(toPrint);
         outputFile.Close();
+    }
+
+    private void printOutFull(string fileName)
+    {
+        printOutFrameTimes(averageEndFrameTimes, fileName);
+        printOutFrameTimes(averageTotalFrameTimes, fileName);
+        printOutFrameTimes(endFrameTimes, fileName);
+        printOutFrameTimes(totalFrameTimes, fileName);
     }
 }

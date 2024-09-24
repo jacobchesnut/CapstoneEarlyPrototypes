@@ -30,6 +30,7 @@ public class TryCreateJoePipeline : MonoBehaviour
 
     private BasicPipeInstance joePipeInstance = null;
     public bool onlyOnce = true;
+    public bool reduceObjectGhosting = false;
     public bool disableFoveatedRendering = false;
     public bool disableRendering = false;
 
@@ -200,6 +201,7 @@ public class TryCreateJoePipeline : MonoBehaviour
 
         //send foveated information to pipeline through struct
         ShaderFoveatedInfo infoToSend = new ShaderFoveatedInfo();
+        infoToSend._UseTAAObjectID = reduceObjectGhosting;
         infoToSend._DisableRendering = disableRendering;
         //set camera frustum info
         CameraInfoReporter camInfo;
@@ -404,4 +406,5 @@ public struct ShaderFoveatedInfo
     public float _SecondQualityOffsetRight;
     public float _ThirdQualityOffsetRight;
     public bool _DisableRendering;
+    public bool _UseTAAObjectID;
 }

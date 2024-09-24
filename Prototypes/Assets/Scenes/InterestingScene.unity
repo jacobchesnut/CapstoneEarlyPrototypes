@@ -2290,6 +2290,7 @@ MonoBehaviour:
   - {fileID: 1152835013}
   - {fileID: 1477830899}
   onlyOnce: 0
+  reduceObjectGhosting: 0
   disableFoveatedRendering: 0
   disableRendering: 0
   pastTextureToRenderTo: []
