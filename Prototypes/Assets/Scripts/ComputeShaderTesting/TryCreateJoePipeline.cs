@@ -19,6 +19,8 @@ public class TryCreateJoePipeline : MonoBehaviour
     public static float DEFAULT_SECOND_REGION = 0.485f;
     public static float DEFAULT_THIRD_REGION = 1.010f;
 
+    private static bool DEBUG_PRINT_CALIBRATION_INFO = true;
+
 
     //for creating the pipeline
     public List<RenderPipelineConfigObject> m_config;
@@ -46,6 +48,8 @@ public class TryCreateJoePipeline : MonoBehaviour
     public float tintBorderSize = 1f;
     public int MaxTAAFrame = 3;
     public float TAAWeightFactor = 0.9f;
+    public float TriangularWeightFactor = 0f;
+    public bool UseGaussianTAA = false;
     public Material BlurMaterial = null;
 
     //config parameters from user tests
@@ -188,6 +192,16 @@ public class TryCreateJoePipeline : MonoBehaviour
         testThirdQualityOffsetRight = ((testThirdQualityOffsetRight * Mathf.Deg2Rad) + DEFAULT_THIRD_REGION) / 2;
         reader.Close();
         stream.Close();
+
+        if (DEBUG_PRINT_CALIBRATION_INFO)
+        {
+            UnityEngine.Debug.Log("Left regions are: " + Mathf.Rad2Deg * testFirstQualityOffsetLeft + " " + 
+                                  Mathf.Rad2Deg * testSecondQualityOffsetLeft + " " + 
+                                  Mathf.Rad2Deg * testThirdQualityOffsetLeft + "\n" +
+                                  "Right regions are: " + Mathf.Rad2Deg * testFirstQualityOffsetRight + 
+                                  " " + Mathf.Rad2Deg * testSecondQualityOffsetRight + " " + 
+                                  Mathf.Rad2Deg * testThirdQualityOffsetRight);
+        }
     }
 
     //only gets called if camera attached to object
@@ -203,6 +217,8 @@ public class TryCreateJoePipeline : MonoBehaviour
         ShaderFoveatedInfo infoToSend = new ShaderFoveatedInfo();
         infoToSend._UseTAAObjectID = reduceObjectGhosting;
         infoToSend._DisableRendering = disableRendering;
+        infoToSend._TriangularDecreaseFactor = TriangularWeightFactor;
+        infoToSend._UseGaussianTAA = UseGaussianTAA;
         //set camera frustum info
         CameraInfoReporter camInfo;
         infoToSend._frustumVector = new Vector4[camerasToRenderTo.Length];   //(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0);
@@ -405,6 +421,8 @@ public struct ShaderFoveatedInfo
     public float _FirstQualityOffsetRight;
     public float _SecondQualityOffsetRight;
     public float _ThirdQualityOffsetRight;
+    public float _TriangularDecreaseFactor;
     public bool _DisableRendering;
     public bool _UseTAAObjectID;
+    public bool _UseGaussianTAA;
 }

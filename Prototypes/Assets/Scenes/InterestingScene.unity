@@ -803,8 +803,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   closestHitGUID: 39feb2bd-5273-4001-be13-a9b18abc1368
-  color: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 0}
-  main: {fileID: 0}
+  color: {r: 1, g: 1, b: 1, a: 0}
+  main: {fileID: 2800000, guid: 7b0afe12c15521e40a479269e74bdfc6, type: 3}
 --- !u!114 &130103996
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -848,7 +848,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startPoint: {fileID: 1815231407}
   endPoint: {fileID: 1941743560}
-  timeForMovement: 3
+  timeForMovement: 2
 --- !u!1 &141807231
 GameObject:
   m_ObjectHideFlags: 0
@@ -2302,6 +2302,8 @@ MonoBehaviour:
   tintBorderSize: 1
   MaxTAAFrame: 4
   TAAWeightFactor: 1
+  TriangularWeightFactor: 0
+  UseGaussianTAA: 0
   BlurMaterial: {fileID: 2100000, guid: 4a440cd8c1a55fa428b8677c9b196bbe, type: 2}
 --- !u!20 &455045220
 Camera:
@@ -9816,7 +9818,7 @@ Transform:
   m_GameObject: {fileID: 1815231406}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -25, y: 0, z: 12.58}
+  m_LocalPosition: {x: -27.78, y: 0, z: 12.58}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10517,7 +10519,7 @@ Transform:
   m_GameObject: {fileID: 1941743559}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 25, y: 0, z: 12.58}
+  m_LocalPosition: {x: 27.78, y: 0, z: 12.58}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

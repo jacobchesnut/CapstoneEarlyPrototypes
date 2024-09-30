@@ -314,8 +314,8 @@ MonoBehaviour:
   pipeline: {fileID: 455045219}
   onePerFrame: 0
   numberRobotsToSpawn: 20
-  framesForPeriodicIncrease: 400
-  increaseRobotsPeriodic: 0
+  framesForPeriodicIncrease: 10
+  increaseRobotsPeriodic: 1
   targetNumRobots: 19
   increaseLightsPeriodic: 0
   targetNumLights: 19

@@ -51,6 +51,7 @@ namespace OpenRT
 
             if (boxes.Count <= 1)
             {
+                Debug.Log("NODE IS " + (boxes.Count));
                 return rootNode;
             }
 
@@ -101,6 +102,7 @@ namespace OpenRT
             if (left.Count == 0 || right.Count == 0)
             {
                 // Bisect fail (e.g. all children aligned on the division plane), end the tree building
+                Debug.Log("NODE IS " + (left.Count + right.Count));
                 return rootNode;
             }
             else
@@ -110,11 +112,19 @@ namespace OpenRT
                     // Continue bisect
                     rootNode.left = Build(left, depth + 1);
                 }
+                else
+                {
+                    //Debug.Log("NODE IS " + (left.Count + right.Count));
+                }
 
                 if (right.Count > MIN_NUMBER_OF_GEO_IN_BOX && depth < HARD_LIMIT_MAX_DEPTH)
                 {
                     // Continue bisect
                     rootNode.right = Build(right, depth + 1);
+                }
+                else
+                {
+                    //Debug.Log("NODE IS " + (left.Count + right.Count));
                 }
 
                 return rootNode;

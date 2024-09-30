@@ -11,6 +11,9 @@
 #include "Primitive/Primitive.compute"
 #include "BVH/RTBoundingBox.compute"
 
+static const float PI = 3.14159265359f;
+
+
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
@@ -66,12 +69,14 @@ bool _onlyOneSample; //tells the shader to ignore the number of samples to use
 bool _showTint; //should we tint based on region
 bool _showOverlay; //should we show the overlay
 bool _UseTAAObjectID;
+bool _UseGaussianTAA;
 static const float _overlaySize = 0.005f; //size of overlay in angle
 float _debugRegionBorderSize;
 RWTexture2DArray<float4> _LowResTexture;
 int _temporalFramePosition; //which frame to write to for TAA
 int _totalNoTAAFrames; //the total number of TAA frames being used
 float _weightDecreaseFactor; //rate at which weight of previous frames decreases
+float _TriangularDecreaseFactor; //rate for linear decrease
 RWTexture2DArray<float4> _PastTexture; //past frame data for TAA
 //TAA frames are on odd numbers ((_temporalFramePosition * 2) + 1), object ids are on even numbers (2*_temporalFramePosition)
 
@@ -524,6 +529,10 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 currentFrame += _totalNoTAAFrames; //go to front of list/wraparound
             }
             currentWeight *= _weightDecreaseFactor; //exponential decrease
+            currentWeight -= _TriangularDecreaseFactor;
+            if(_UseGaussianTAA){
+                currentWeight = (1/sqrt(2 * PI * _weightDecreaseFactor * _weightDecreaseFactor)) * exp(-((i * i)/(2 * _weightDecreaseFactor * _weightDecreaseFactor)));
+                }
             if(currentWeight <= 0){
                 //we are no longer interested in frames beyond this point.
                 break;

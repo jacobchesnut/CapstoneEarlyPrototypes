@@ -66,6 +66,15 @@ namespace OpenRT
                     rootNode.left = Build(left, depth + 1, minNumberOfGeoPerBox);
                     rootNode.right = Build(right, depth + 1, minNumberOfGeoPerBox);
                 }
+                //else
+                //{
+                //    Debug.Log("NODE IS " + (left.Count + right.Count));
+                //}
+
+                //if(depth > HARD_LIMIT_MAX_DEPTH)
+                //{
+                //    Debug.Log("MAX DEPTH REACHED!");
+                //}
             }
 
             return rootNode;

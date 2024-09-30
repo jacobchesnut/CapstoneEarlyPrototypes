@@ -141,6 +141,8 @@ namespace OpenRT
             m_mainShader.SetBool("_runNoFoveated", runNoFoveation);
             m_mainShader.SetBool("_onlyOneSample", runOnlyOneSample);
             m_mainShader.SetBool("_UseTAAObjectID", foveatedInfo._UseTAAObjectID);
+            m_mainShader.SetFloat("_TriangularDecreaseFactor", foveatedInfo._TriangularDecreaseFactor);
+            m_mainShader.SetBool("_UseGaussianTAA", foveatedInfo._UseGaussianTAA);
 
             disableRendering = foveatedInfo._DisableRendering;
 
