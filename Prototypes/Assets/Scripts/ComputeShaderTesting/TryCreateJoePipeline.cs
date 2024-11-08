@@ -35,6 +35,7 @@ public class TryCreateJoePipeline : MonoBehaviour
     public bool reduceObjectGhosting = false;
     public bool disableFoveatedRendering = false;
     public bool disableRendering = false;
+    public bool disableBlur = false;
 
     //vars for creating diffs
     public RenderTexture[] pastTextureToRenderTo;
@@ -290,7 +291,7 @@ public class TryCreateJoePipeline : MonoBehaviour
         joePipeInstance.setMaxTAAFrames(MaxTAAFrame);
 
         //long startTime = DateTime.Now.ToFileTime();
-        joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, disableFoveatedRendering, false);
+        joePipeInstance.Render(contextToUse, camerasToRenderTo, textureToRenderTo, onlyOnce, infoToSend, disableFoveatedRendering, false, disableBlur);
         //long endTime = DateTime.Now.ToFileTime();
         string timeReporter = GlobalTimer.EndStopwatch(3);
         UnityEngine.Debug.Log("Time spent through frame generation and setting outside vars: " + timeReporter);
@@ -344,7 +345,7 @@ public class TryCreateJoePipeline : MonoBehaviour
             File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingLeftCamDiff" + ".png", temp.EncodeToPNG());
 
             //now create ideal and "ok" diffs to print out
-            joePipeInstance.Render(contextToUse, camerasToRenderTo, pastTextureToRenderTo, onlyOnce, infoToSend, true, false);
+            joePipeInstance.Render(contextToUse, camerasToRenderTo, pastTextureToRenderTo, onlyOnce, infoToSend, true, false, disableBlur);
 
             createDifference(textureToRenderTo[0], pastTextureToRenderTo[0]);
 
@@ -362,7 +363,7 @@ public class TryCreateJoePipeline : MonoBehaviour
             temp.Apply();
             File.WriteAllBytes(DateTime.Now.ToFileTime() + "_" + "JoeTestingRightCamIdealDiff" + ".png", temp.EncodeToPNG());
 
-            joePipeInstance.Render(contextToUse, camerasToRenderTo, pastTextureToRenderTo, onlyOnce, infoToSend, true, true);
+            joePipeInstance.Render(contextToUse, camerasToRenderTo, pastTextureToRenderTo, onlyOnce, infoToSend, true, true, disableBlur);
 
             createDifference(textureToRenderTo[0], pastTextureToRenderTo[0]);
 

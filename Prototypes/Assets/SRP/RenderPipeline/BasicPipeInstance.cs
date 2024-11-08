@@ -90,6 +90,7 @@ namespace OpenRT
         private bool clearMaterials = false;
 
         private bool disableRendering = false;
+        private bool disableBlur = false;
 
         public BasicPipeInstance(Color clearColor, ComputeShader mainShader, List<RenderPipelineConfigObject> allConfig, Material BlurMaterial)
         {
@@ -133,8 +134,11 @@ namespace OpenRT
         }
 
         //removed override to make public
-        public void Render(ScriptableRenderContext renderContext, Camera[] cameras, RenderTexture[] texToWriteTo, bool pPressed, ShaderFoveatedInfo foveatedInfo, bool runNoFoveation, bool runOnlyOneSample) // This is the function called every frame to draw on the screen
+        public void Render(ScriptableRenderContext renderContext, Camera[] cameras, RenderTexture[] texToWriteTo, bool pPressed, ShaderFoveatedInfo foveatedInfo, bool runNoFoveation, bool runOnlyOneSample, bool disableBlur) // This is the function called every frame to draw on the screen
         {
+            this.disableBlur = disableBlur;
+            
+
             string timeElapsed;
             GlobalTimer.StartStopwatch(1);
             onlyOnce = pPressed;
@@ -758,11 +762,17 @@ namespace OpenRT
             {
                 m_mainShader.Dispatch(kernelIndex: kIndex, threadGroupsX: threadGroupsX, threadGroupsY: threadGroupsY, threadGroupsZ: 1);
             }
-            
+
 
             //additional setup for post process blur, while blit to final:
-
-            Graphics.Blit(targeTexture, textureToWriteTo, m_blurMaterial);
+            if (!disableBlur)
+            {
+                Graphics.Blit(targeTexture, textureToWriteTo, m_blurMaterial);
+            }
+            else
+            {
+                Graphics.Blit(targeTexture, textureToWriteTo);
+            }
 
             if (MEASURE_DISPATCH_TIME)
             {

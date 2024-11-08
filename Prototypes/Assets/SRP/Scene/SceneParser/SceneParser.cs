@@ -206,12 +206,17 @@ namespace OpenRT
             sceneParseResult.ClearAllGeometries();
             sceneParseResult.ClearAllMaterials();
             sceneParseResult.ClearTopLevelBVH();
+            connections.Clear();
 
             foreach (var renderer in renderers)
             {
                 if (renderer.gameObject.activeInHierarchy)
                 {
+                    RenderConnector newConnection = new RenderConnector();
+                    newConnection.r_renderer = renderer;
+
                     RTMaterial material = renderer.material;
+                    newConnection.r_material = material;
                     if (renderer.geometry == null || !renderer.geometry.IsGeometryValid() || material == null)
                     {
                         continue;
@@ -222,6 +227,8 @@ namespace OpenRT
                     var intersectShaderGUID = renderer.geometry.GetIntersectShaderGUID();
                     int intersectShaderIndex = CustomShaderDatabase.Instance.GUIDToShaderIndex(intersectShaderGUID, EShaderType.Intersect);
 
+                    newConnection.r_intersectIndex = intersectShaderIndex;
+
                     if (!sceneParseResult.GeometryStride.ContainsKey(intersectShaderIndex))
                     {
                         sceneParseResult.GeometryStride.Add(intersectShaderIndex, renderer.geometry.IsAccelerationStructure() ? 0 : renderer.geometry.GetStride());
@@ -231,7 +238,10 @@ namespace OpenRT
                     {
                         // Such as Low-Level BVH (RTMeshBVH)
                         int mapOffset = sceneParseResult.ObjectLevelAccGeoMapCursor(intersectShaderIndex);
+                        newConnection.r_mapOffset = mapOffset;
                         int geoOffset = sceneParseResult.ObjectLevelAccGeoCursor(intersectShaderIndex);
+                        newConnection.r_geoOffset = geoOffset;
+                        newConnection.r_dataOffset = sceneParseResult.ObjectLevelAccDataCursor(intersectShaderIndex);
                         ((IRTMeshBVH)(renderer.geometry)).BuildBVHAndTriangleList(geoLocalToGlobalIndexOffset: geoOffset,
                                                                                   mappingLocalToGlobalIndexOffset: mapOffset);
 
@@ -262,20 +272,25 @@ namespace OpenRT
                     );
 
                     int materialInstanceIndex = sceneParseResult.AddMaterial(material);
-                    Matrix4x4 worldToPrim = renderer.gameObject.transform.worldToLocalMatrix;
-                    sceneParseResult.AddWorldToPrimitive(ref worldToPrim);
+                    newConnection.r_worldToPrimitive = renderer.gameObject.transform.worldToLocalMatrix;
+                    sceneParseResult.AddWorldToPrimitive(ref newConnection.r_worldToPrimitive);
 
-                    sceneParseResult.AddPrimitive(new Primitive(
+                    newConnection.r_primitive = new Primitive(
                         geometryIndex: intersectShaderIndex,
                         geometryInstanceBegin: startIndex,
                         geometryInstanceCount: renderer.geometry.GetCount(),
                         materialIndex: closestShaderIndex,
                         materialInstanceIndex: materialInstanceIndex,
                         transformIndex: sceneParseResult.WorldToPrimitive.Count - 1
-                    ));
+                    );
+                    sceneParseResult.AddPrimitive(newConnection.r_primitive);
 
                     var boxOfThisObject = renderer.geometry.GetTopLevelBoundingBox(assginedPrimitiveId: sceneParseResult.Primitives.Count - 1);
                     sceneParseResult.AddBoundingBox(boxOfThisObject);
+                    newConnection.r_boxIndex = sceneParseResult.AddBoundingBox(boxOfThisObject);
+                    newConnection.r_box = boxOfThisObject;
+                    newConnection.r_assignedPrimitiveID = sceneParseResult.Primitives.Count - 1;
+                    connections.Add(newConnection);
                 }
             }
         }
@@ -503,7 +518,7 @@ namespace OpenRT
 
 
                     var boxOfThisObject = renderer.geometry.GetTopLevelBoundingBox(assginedPrimitiveId: sceneParseResult.Primitives.Count - 1);
-                    oldConnection.r_boxIndex = sceneParseResult.AddBoundingBox(boxOfThisObject);
+                    newConnection.r_boxIndex = sceneParseResult.AddBoundingBox(boxOfThisObject);
                     newConnection.r_box = boxOfThisObject;
                     newConnection.r_assignedPrimitiveID = sceneParseResult.Primitives.Count - 1;
                     connections.Add(newConnection);
