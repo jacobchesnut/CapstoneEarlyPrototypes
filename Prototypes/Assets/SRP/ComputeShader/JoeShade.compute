@@ -70,6 +70,7 @@ bool _showTint; //should we tint based on region
 bool _showOverlay; //should we show the overlay
 bool _UseTAAObjectID;
 bool _UseGaussianTAA;
+bool _cullNoRender; //toggle for properly not sampling the no-render zone
 static const float _overlaySize = 0.005f; //size of overlay in angle
 float _debugRegionBorderSize;
 RWTexture2DArray<float4> _LowResTexture;
@@ -224,10 +225,19 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         _LowResTexture[int3(finalXY.x, finalXY.y, 2)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
         return;
     }
-    if(angle < (_thirdAngleMax - 0.005f) && (_runRes == 4)){
+    if(_cullNoRender){ //seperate checks for outside zone, because need ability to test both for results
+        if((angle < (_thirdAngleMax - 0.005f) || angleFromCenter > (_boundaryAngleMax + 0.005f)) && (_runRes == 4)){ //include extra check for no-render zone
         _LowResTexture[int3(finalXY.x, finalXY.y, 3)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
         return;
+        }
     }
+    else{
+        if(angle < (_thirdAngleMax - 0.005f) && (_runRes == 4)){
+        _LowResTexture[int3(finalXY.x, finalXY.y, 3)] = float4(1,0,1,1); //don't render here because there will be no pulling from here
+        return;
+        }
+    }
+    
 
     if(!(_runRes > 0) && _showOverlay && angle <= _overlaySize){
         //just render pink to show center of user gaze
@@ -264,7 +274,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 //Result[finalXY] = float4(0,0,0,1);
                 //return;
             //}
-            if(angleFromCenter > 0.785f){ //45 degrees from center
+            if(angleFromCenter > _boundaryAngleMax){
                 //outside viewable area (don't render)
                 Result[finalXY] = float4(0,0,0,1);
                 return;
@@ -304,7 +314,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             
             int srLevel = -1;
             float3 secRayCombinedColor = float3(0, 0, 0);
-            /*
+            
             // TODO: Refactor this to avoid special case for primary ray
             SecRaysAtHit secRaysAtHit = CreateSecRaysAtHit();   // TODO: Optimization: Avoid initialize the internal Ray array
             SecRays(ray, hit, secRaysAtHit);
@@ -405,7 +415,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 {
                     secRayCombinedColor = secRayCombinedColor + _secondaryRayStack[c].color * _secondaryRayStack[c].weight;
                 }
-            }*/ //attempting removal of secondary rays
+            }
 
             // Closet Hit Shader
             result = ClosestHit(

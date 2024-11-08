@@ -33,6 +33,7 @@ public class TryCreateJoePipeline : MonoBehaviour
     private BasicPipeInstance joePipeInstance = null;
     public bool onlyOnce = true;
     public bool reduceObjectGhosting = false;
+    public bool cullNoRenderZone = true;
     public bool disableFoveatedRendering = false;
     public bool disableRendering = false;
     public bool disableBlur = false;
@@ -196,6 +197,7 @@ public class TryCreateJoePipeline : MonoBehaviour
 
         if (DEBUG_PRINT_CALIBRATION_INFO)
         {
+            UnityEngine.Debug.Log("border angle is: " + testBorderAngle);
             UnityEngine.Debug.Log("Left regions are: " + Mathf.Rad2Deg * testFirstQualityOffsetLeft + " " + 
                                   Mathf.Rad2Deg * testSecondQualityOffsetLeft + " " + 
                                   Mathf.Rad2Deg * testThirdQualityOffsetLeft + "\n" +
@@ -220,6 +222,7 @@ public class TryCreateJoePipeline : MonoBehaviour
         infoToSend._DisableRendering = disableRendering;
         infoToSend._TriangularDecreaseFactor = TriangularWeightFactor;
         infoToSend._UseGaussianTAA = UseGaussianTAA;
+        infoToSend._cullNoRender = cullNoRenderZone;
         //set camera frustum info
         CameraInfoReporter camInfo;
         infoToSend._frustumVector = new Vector4[camerasToRenderTo.Length];   //(frustumInformation.x, frustumInformation.y, frustumInformation.z, 0);
@@ -426,4 +429,5 @@ public struct ShaderFoveatedInfo
     public bool _DisableRendering;
     public bool _UseTAAObjectID;
     public bool _UseGaussianTAA;
+    public bool _cullNoRender;
 }

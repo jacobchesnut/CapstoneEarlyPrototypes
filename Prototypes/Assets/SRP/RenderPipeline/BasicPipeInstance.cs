@@ -147,6 +147,7 @@ namespace OpenRT
             m_mainShader.SetBool("_UseTAAObjectID", foveatedInfo._UseTAAObjectID);
             m_mainShader.SetFloat("_TriangularDecreaseFactor", foveatedInfo._TriangularDecreaseFactor);
             m_mainShader.SetBool("_UseGaussianTAA", foveatedInfo._UseGaussianTAA);
+            m_mainShader.SetBool("_cullNoRender", foveatedInfo._cullNoRender);
 
             disableRendering = foveatedInfo._DisableRendering;
 
@@ -273,7 +274,7 @@ namespace OpenRT
 
             //calibration info
             m_mainShader.SetFloat("_yOffset", foveatedInfo._YOffset);
-            m_mainShader.SetFloat("_boundaryAngleMax", foveatedInfo._BorderAngle);
+            m_mainShader.SetFloat("_boundaryAngleMax", foveatedInfo._BorderAngle * Mathf.Deg2Rad); //needs to be radians
 
             if (camNumber == 0)
             {
