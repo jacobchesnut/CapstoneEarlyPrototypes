@@ -314,7 +314,7 @@ MonoBehaviour:
   pipeline: {fileID: 455045219}
   onePerFrame: 0
   numberRobotsToSpawn: 20
-  framesForPeriodicIncrease: 10
+  framesForPeriodicIncrease: 400
   increaseRobotsPeriodic: 1
   targetNumRobots: 19
   increaseLightsPeriodic: 0
@@ -2104,8 +2104,10 @@ MonoBehaviour:
   - {fileID: 1477830899}
   onlyOnce: 0
   reduceObjectGhosting: 0
+  cullNoRenderZone: 0
   disableFoveatedRendering: 0
   disableRendering: 0
+  disableBlur: 0
   pastTextureToRenderTo: []
   differenceTexture: {fileID: 0}
   differenceShader: {fileID: 7200000, guid: fdd78d1564f6922479223a6f6daf0b7b, type: 3}
@@ -2115,6 +2117,8 @@ MonoBehaviour:
   tintBorderSize: 1
   MaxTAAFrame: 4
   TAAWeightFactor: 1
+  TriangularWeightFactor: 0
+  UseGaussianTAA: 0
   BlurMaterial: {fileID: 2100000, guid: 4a440cd8c1a55fa428b8677c9b196bbe, type: 2}
 --- !u!20 &455045220
 Camera:
@@ -6021,7 +6025,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1897579588
 MonoBehaviour:
   m_ObjectHideFlags: 0

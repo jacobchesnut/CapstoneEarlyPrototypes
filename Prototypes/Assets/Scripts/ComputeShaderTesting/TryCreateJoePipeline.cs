@@ -197,6 +197,8 @@ public class TryCreateJoePipeline : MonoBehaviour
 
         if (DEBUG_PRINT_CALIBRATION_INFO)
         {
+            UnityEngine.Debug.Log("XOffset is " + testXOffset);
+            UnityEngine.Debug.Log("YOffset is " + testYOffset);
             UnityEngine.Debug.Log("border angle is: " + testBorderAngle);
             UnityEngine.Debug.Log("Left regions are: " + Mathf.Rad2Deg * testFirstQualityOffsetLeft + " " + 
                                   Mathf.Rad2Deg * testSecondQualityOffsetLeft + " " + 
